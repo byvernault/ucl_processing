@@ -30,7 +30,7 @@ DEFAULT_GIF_PATH = '/share/apps/cmic/niftypipe/bin/perform_gif_propagation.py'
 DEFAULT_SCAN_TYPES = ['T1', 'MPRAGE'] # ADD SCAN TYPES
 
 # Format for the spider command line
-SPIDER_FORMAT = '''python {spider} -p {proj} -s {subj} -e {sess} -c {scan} -d {dir} --host {host} --suffix "{suffix_proc}" --dbt {template} --gif {gif_path}'''
+SPIDER_FORMAT = '''python {spider} -p {proj} -s {subj} -e {sess} -c {scan} -d {dir} --host "{host}" --suffix "{suffix_proc}" --dbt {template} --gif {gif_path}'''
 
 class Processor_GIF_Parcellation(ScanProcessor):
     '''
@@ -46,7 +46,7 @@ class Processor_GIF_Parcellation(ScanProcessor):
     '''
     def __init__(self, spider_path=DEFAULT_SPIDER_PATH, version=None,
                  walltime=DEFAULT_WALLTIME, mem_mb=DEFAULT_MEM, ppn=DEFAULT_PPN,
-                 db_template=DEFAULT_TEMPLATE, gif=DEFAULT_GIF_PATH, xnat_host=None,
+                 db_template=DEFAULT_TEMPLATE, gif=DEFAULT_GIF_PATH, xnat_host='',
                  scan_types=DEFAULT_SCAN_TYPES, suffix_proc=''):
         super(Processor_GIF_Parcellation, self).__init__(scan_types, walltime, mem_mb, spider_path,
                                                          version, ppn=ppn, suffix_proc=suffix_proc)
