@@ -29,7 +29,7 @@ DEFAULT_TYPES = 'all'
 DEFAULT_REG_ALADIN = '/share/apps/cmic/niftypipe_deps/bin/reg_aladin'
 
 # Format for the spider command line
-SPIDER_FORMAT = '''python {spider} -p {proj} -s {subj} -e {sess} -d {dir} --host {host} --suffix "{suffix_proc}" --scansID {sources} --scanRef {target} --regAladin {regaladin}'''
+SPIDER_FORMAT = '''python {spider} -p {proj} -s {subj} -e {sess} -d {dir} --host "{host}" --suffix "{suffix_proc}" --scansID {sources} --scanRef {target} --regAladin {regaladin}'''
 
 class Registration2Ref_Processor(SessionProcessor):
     '''
@@ -47,7 +47,7 @@ class Registration2Ref_Processor(SessionProcessor):
     def __init__(self, spider_path=DEFAULT_SPIDER_PATH, version=None,
                  walltime=DEFAULT_WALLTIME, mem_mb=DEFAULT_MEM,
                  target_type=None, sources_type=DEFAULT_TYPES,
-                 reg_aladin_exe=DEFAULT_REG_ALADIN, xnat_host=None,
+                 reg_aladin_exe=DEFAULT_REG_ALADIN, xnat_host='',
                  suffix_proc=''):
         super(Registration2Ref_Processor, self).__init__(walltime, mem_mb, spider_path, version,
                                                suffix_proc=suffix_proc)
