@@ -25,11 +25,12 @@ LOGGER = logging.getLogger('dax')
 DEFAULT_SPIDER_PATH = '/home/byvernau/Xnat-management/spiders/Spider_Registration2Ref_v1_0_0.py'
 DEFAULT_WALLTIME = '04:00:00'
 DEFAULT_MEM = 2048
+DEFAULT_PPN = 1
 DEFAULT_TYPES = 'all'
 DEFAULT_REG_ALADIN = '/share/apps/cmic/niftypipe_deps/bin/reg_aladin'
 
 # Format for the spider command line
-SPIDER_FORMAT = '''python {spider} -p {proj} -s {subj} -e {sess} -d {dir} --host "{host}" --suffix "{suffix_proc}" --scansID {sources} --scanRef {target} --regAladin {regaladin}'''
+SPIDER_FORMAT = '''python {spider} -p {proj} -s {subj} -e {sess} -d {dir} --host "{host}" --suffix "{suffix_proc}" --scansID {sources} --scanRef {target} --regAladin {regaladin} --openm_core {number_core}'''
 
 class Registration2Ref_Processor(SessionProcessor):
     '''
@@ -45,12 +46,12 @@ class Registration2Ref_Processor(SessionProcessor):
     :param suffix: suffix to the spider
     '''
     def __init__(self, spider_path=DEFAULT_SPIDER_PATH, version=None,
-                 walltime=DEFAULT_WALLTIME, mem_mb=DEFAULT_MEM,
+                 walltime=DEFAULT_WALLTIME, mem_mb=DEFAULT_MEM, ppn=DEFAULT_PPN
                  target_type=None, sources_type=DEFAULT_TYPES,
                  reg_aladin_exe=DEFAULT_REG_ALADIN, xnat_host='',
                  suffix_proc=''):
         super(Registration2Ref_Processor, self).__init__(walltime, mem_mb, spider_path, version,
-                                               suffix_proc=suffix_proc)
+                                                         ppn=ppn, suffix_proc=suffix_proc)
         # Reference
         if not target_type:
             raise Exception("Processor_Registration2Ref: reference type not set. Please edit your settings file.")
@@ -126,6 +127,7 @@ class Registration2Ref_Processor(SessionProcessor):
                                    host=self.xnat_host,
                                    target=target_id,
                                    sources=sources_id,
-                                   regaladin=self.regaladin)
+                                   regaladin=self.regaladin
+                                   number_core=self.ppn)
 
         return [cmd]
