@@ -28,7 +28,7 @@ from dax import spiders, RESULTS_DIR, ScanSpider
 
 YLABELS = ['Bias Corrected', 'Brain', 'labels', 'Segmentation', 'tiv', 'prior']
 CMAPS = ['gray', 'gray', None, 'gray', 'gray', None]
-GIF_CMD = """python {exe_path} -i {input} -o {output} -d {db_xml} --no_qsub"""
+GIF_CMD = """python {exe_path} -i {input} -o {output} -d {db_xml} --no_qsub --openm_core {number_core} --n_cores 1"""
 
 def parse_args():
     '''
@@ -43,13 +43,15 @@ def parse_args():
         --host   : host for XNAT (default: XNAT_HOST env variable)
         --user   : user on XNAT (default: XNAT_USER env variable)
     your arguments:
-	    --dbt    : gif-based database xml file describing the inputs
-	    --gif    : Path to the Gif python script: perform_gif_propagation.py
+	--dbt    : gif-based database xml file describing the inputs
+	--gif    : Path to the Gif python script: perform_gif_propagation.py
+	--openm_core : number of core use by reg_aladin. Default: one
     :return: argument parser object created by parse_args()
     '''
     ap = spiders.get_scan_argparser("GIF_Parcellation", "Parcellation of the brain using GIF: Geodesic Information Flow.")
     ap.add_argument("--dbt", dest="dbtemplate", help="gif-based database xml file describing the inputs.", required=True)
     ap.add_argument("--gif", dest="gif_script", help="Path to the Gif python script: perform_gif_propagation.py.", required=True)
+    ap.add_argument("--openm_core", dest="openm_core", help="Number of core used by reg_aladin.", required=False, Default=1)
     return ap.parse_args()
 
 class Spider_GIF_Parcellation(ScanSpider):
@@ -65,13 +67,15 @@ class Spider_GIF_Parcellation(ScanSpider):
         :param xnat_host: host for XNAT if not set in environment variables
         :param xnat_user: user for XNAT if not set in environment variables
         :param xnat_pass: password for XNAT if not set in environment variables
+        :param number_core: number of core used by reg_aladin
         :param suffix: suffix to the assessor creation
     '''
     def __init__(self, spider_path, jobdir, xnat_project, xnat_subject, xnat_session, xnat_scan,
-                 xnat_host=None, xnat_user=None, xnat_pass=None, suffix=""):
+                 xnat_host=None, xnat_user=None, xnat_pass=None, number_core=1, suffix=""):
         super(Spider_GIF_Parcellation, self).__init__(spider_path, jobdir, xnat_project, xnat_subject, xnat_session, xnat_scan,
                                             xnat_host, xnat_user, xnat_pass, suffix)
         self.inputs = list()
+        self.number_core = number_core
         # Print version for Niftyreg - GIFi
         proc_nifty = sb.Popen(['reg_aladin', '--version'], stdout=sb.PIPE,
                                                       	   stderr=sb.PIPE)
@@ -112,7 +116,8 @@ class Spider_GIF_Parcellation(ScanSpider):
             cmd = GIF_CMD.format(exe_path=exe_path,
                                  input=self.inputs[0],
                                  output=os.path.join(self.jobdir, 'outputs'),
-                                 db_xml=dbtemplate)
+                                 db_xml=dbtemplate,
+                                 number_core=self.number_core)
             self.run_system_cmd(cmd)
             self.make_pdf()
 
@@ -304,6 +309,7 @@ if __name__ == '__main__':
                                          xnat_host=args.host,
                                          xnat_user=args.user,
                                          xnat_pass=None,
+                                         number_core=args.openm_core,
                                          suffix=args.suffix)
 
     # print some information before starting
