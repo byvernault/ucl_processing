@@ -43,6 +43,7 @@ def parse_args():
             --scansType : scan types to register to the reference
             --scanRef : scan ID for the reference from XNAT
             --regAladin : path to reg_aladin's executable
+            --openm_core : number of core use by reg_aladin. Default: one
 
         :return: argument parser object created by parse_args()
     '''
@@ -50,6 +51,7 @@ def parse_args():
     ap.add_argument("--scansID", dest="scans_id", help="Scans ID from XNAT to register to reference.", required=True)
     ap.add_argument("--scanRef", dest="scan_ref", help="Scan ID from XNAT of the reference scan for the registration.", required=True)
     ap.add_argument("--regAladin", dest="reg_aladin_exe", help="path to reg_aladin's executable.", required=True)
+    ap.add_argument("--openm_core", dest="openm_core", help="Number of core used by reg_aladin.", required=False, Default=1)
     return ap.parse_args()
 
 class Spider_Registration2Ref(SessionSpider):
@@ -269,6 +271,9 @@ class Spider_Registration2Ref(SessionSpider):
 
 if __name__ == '__main__':
     ARGS = parse_args()
+    # Set the environment variable:
+    os.environ['OMP_NUM_THREADS'] = ARGS.openm_core
+    
     # generate spider object:
     spider_obj = Spider_Registration2Ref(spider_path=sys.argv[0],
                                          jobdir=ARGS.temp_dir,
