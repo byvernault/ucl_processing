@@ -47,7 +47,7 @@ def parse_args():
     your arguments:
 	--dbt    : gif-based database xml file describing the inputs
 	--gif    : Path to the Gif python script: perform_gif_propagation.py
-	--openm_core : number of core use by reg_aladin. Default: one
+	--openmp_core : number of core use by reg_aladin. Default: one
     :return: argument parser object created by parse_args()
     '''
     ap = spiders.get_scan_argparser("GIF_Parcellation", "Parcellation of the brain using GIF: Geodesic Information Flow.")
@@ -310,7 +310,7 @@ if __name__ == '__main__':
                                          xnat_host=args.host,
                                          xnat_user=args.user,
                                          xnat_pass=None,
-                                         number_core=args.openm_core,
+                                         number_core=args.openmp_core,
                                          suffix=args.suffix)
 
     # print some information before starting
