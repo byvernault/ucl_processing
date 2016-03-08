@@ -23,7 +23,7 @@ import nibabel as nib
 import subprocess as sb
 from datetime import datetime
 import matplotlib.pyplot as plt
-from dax import spiders, XnatUtils, RESULTS_DIR, SessionSpider
+from dax import spiders, XnatUtils, SessionSpider
 
 REG_ALADIN_CMD = """{exe_path} --flo {input} --ref {reference} --aff {affine} --res {output} {args}"""
 RA_ARGS = """ --floUpThr 1000 --smooF 0 --maxit 5 --refUpThr 1000 --interp 0 --lp 3 --smooR 0 --ln 3 --pi 50 --refLowThr 0 --smooF 0 --maxit 5 --refUpThr 1000 --interp 0 --lp 3 --smooR 0 --ln 3 --pi 50 --refLowThr 0 --pv 50 --floLowThr 0 """
@@ -144,7 +144,6 @@ class Spider_Registration2Ref(SessionSpider):
         '''
             Method to copy the results in the Spider Results folder dax.RESULTS_DIR
         '''
-        self.time_writer('Results saved in folder: %s' % (RESULTS_DIR))
         results_dict = {'PDF': self.pdf_final}
         for out_folder in self.outputs:
             results_dict[os.path.basename(out_folder)] = out_folder
