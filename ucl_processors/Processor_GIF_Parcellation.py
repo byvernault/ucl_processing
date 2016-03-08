@@ -99,7 +99,7 @@ class Processor_GIF_Parcellation(ScanProcessor):
                                    host=self.xnat_host,
                                    suffix_proc=self.suffix_proc,
                                    template=self.db_template,
-                                   gif_path=self.gif
+                                   gif_path=self.gif,
                                    number_core=self.ppn)
 
         return [cmd]
