@@ -24,7 +24,9 @@ import nibabel as nib
 import matplotlib.pyplot as plt
 import subprocess as sb
 from datetime import datetime
-from dax import spiders, RESULTS_DIR, ScanSpider
+from dax import spiders, ScanSpider
+
+
 
 YLABELS = ['Bias Corrected', 'Brain', 'labels', 'Segmentation', 'tiv', 'prior']
 CMAPS = ['gray', 'gray', None, 'gray', 'gray', None]
@@ -125,7 +127,6 @@ class Spider_GIF_Parcellation(ScanSpider):
         '''
             Method to copy the results in the Spider Results folder dax.RESULTS_DIR
         '''
-        self.time_writer('Results saved in folder: %s' % (RESULTS_DIR))
 	# Images outputs:
         bias_corrected = glob.glob(os.path.join(self.jobdir, 'outputs', '*bias_corrected.nii.gz'))
         brain = glob.glob(os.path.join(self.jobdir, 'outputs', '*brain.nii.gz'))
