@@ -21,7 +21,7 @@ LOGGER = logging.getLogger('dax')
 
 # Default values for arguments:
 # EDIT PARAMETERS FOR YOUR SPIDER CASE (SPIDER_PATH, WALLTIME, etc...)
-DEFAULT_SPIDER_PATH = '/home/byvernau/Xnat-management/spiders/Spider_GIF_Parcellation_v1_0_0.py'
+DEFAULT_SPIDER_PATH = '/home/byvernau/Xnat-management/ucl_processing/ucl_spiders/Spider_GIF_Parcellation_v1_0_0.py'
 DEFAULT_WALLTIME = '48:00:00'
 DEFAULT_MEM = 3850
 DEFAULT_PPN = 4
