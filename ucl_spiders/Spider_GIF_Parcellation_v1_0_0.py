@@ -53,7 +53,7 @@ def parse_args():
     ap = spiders.get_scan_argparser("GIF_Parcellation", "Parcellation of the brain using GIF: Geodesic Information Flow.")
     ap.add_argument("--dbt", dest="dbtemplate", help="gif-based database xml file describing the inputs.", required=True)
     ap.add_argument("--gif", dest="gif_script", help="Path to the Gif python script: perform_gif_propagation.py.", required=True)
-    ap.add_argument("--openm_core", dest="openm_core", help="Number of core used by reg_aladin.", required=False, Default=1)
+    ap.add_argument("--openm_core", dest="openm_core", help="Number of core used by reg_aladin.", required=False, default=1)
     return ap.parse_args()
 
 class Spider_GIF_Parcellation(ScanSpider):
