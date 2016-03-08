@@ -127,7 +127,7 @@ class Registration2Ref_Processor(SessionProcessor):
                                    host=self.xnat_host,
                                    target=target_id,
                                    sources=sources_id,
-                                   regaladin=self.regaladin
+                                   regaladin=self.regaladin,
                                    number_core=self.ppn)
 
         return [cmd]
