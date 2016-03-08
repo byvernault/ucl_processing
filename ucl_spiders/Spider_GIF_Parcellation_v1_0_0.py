@@ -30,7 +30,7 @@ from dax import spiders, ScanSpider
 
 YLABELS = ['Bias Corrected', 'Brain', 'labels', 'Segmentation', 'tiv', 'prior']
 CMAPS = ['gray', 'gray', None, 'gray', 'gray', None]
-GIF_CMD = """python {exe_path} -i {input} -o {output} -d {db_xml} --no_qsub --openm_core {number_core} --n_cores 1"""
+GIF_CMD = """python {exe_path} -i {input} -o {output} -d {db_xml} --no_qsub --openmp_core {number_core} --n_procs 1"""
 
 def parse_args():
     '''
@@ -53,7 +53,7 @@ def parse_args():
     ap = spiders.get_scan_argparser("GIF_Parcellation", "Parcellation of the brain using GIF: Geodesic Information Flow.")
     ap.add_argument("--dbt", dest="dbtemplate", help="gif-based database xml file describing the inputs.", required=True)
     ap.add_argument("--gif", dest="gif_script", help="Path to the Gif python script: perform_gif_propagation.py.", required=True)
-    ap.add_argument("--openm_core", dest="openm_core", help="Number of core used by reg_aladin.", required=False, default=1)
+    ap.add_argument("--openmp_core", dest="openmp_core", help="Number of core used by reg_aladin.", required=False, default=1)
     return ap.parse_args()
 
 class Spider_GIF_Parcellation(ScanSpider):
