@@ -51,7 +51,7 @@ def parse_args():
     ap.add_argument("--scansID", dest="scans_id", help="Scans ID from XNAT to register to reference.", required=True)
     ap.add_argument("--scanRef", dest="scan_ref", help="Scan ID from XNAT of the reference scan for the registration.", required=True)
     ap.add_argument("--regAladin", dest="reg_aladin_exe", help="path to reg_aladin's executable.", required=True)
-    ap.add_argument("--openm_core", dest="openm_core", help="Number of core used by reg_aladin.", required=False, Default=1)
+    ap.add_argument("--openm_core", dest="openm_core", help="Number of core used by reg_aladin.", required=False, default=1)
     return ap.parse_args()
 
 class Spider_Registration2Ref(SessionSpider):
