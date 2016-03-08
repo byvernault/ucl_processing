@@ -18,7 +18,7 @@ __modifications__ = "2016-02-22 14:19:24.698923 - Original write"
 import os
 import sys
 import subprocess as sb
-from dax import XnatUtils, spiders, RESULTS_DIR, ScanSpider
+from dax import XnatUtils, spiders, ScanSpider
 
 DEFAULT_PIXEL_SIZE = '0.775438'
 VESSEL_CMD = """{exe_path} -i {input} -o {output} --mod 0 --aone 0.5 --atwo 2 --min {pixel_size} --max 3.09 --intfil"""
@@ -136,7 +136,6 @@ class Spider_Vessel_Extraction(ScanSpider):
         '''
             Method to copy the results in the Spider Results folder dax.RESULTS_DIR
         '''
-        self.time_writer('Results saved in folder: %s' % (RESULTS_DIR))
         results_dict = {#'PDF': pdfpath,
                         'OUTPUT': self.output
                         }
