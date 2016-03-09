@@ -46,7 +46,7 @@ class Registration2Ref_Processor(SessionProcessor):
     :param suffix: suffix to the spider
     '''
     def __init__(self, spider_path=DEFAULT_SPIDER_PATH, version=None,
-                 walltime=DEFAULT_WALLTIME, mem_mb=DEFAULT_MEM, ppn=DEFAULT_PPN
+                 walltime=DEFAULT_WALLTIME, mem_mb=DEFAULT_MEM, ppn=DEFAULT_PPN,
                  target_type=None, sources_type=DEFAULT_TYPES,
                  reg_aladin_exe=DEFAULT_REG_ALADIN, xnat_host='',
                  suffix_proc=''):
