@@ -75,7 +75,7 @@ class Spider_GIF_Parcellation(ScanSpider):
     def __init__(self, spider_path, jobdir, xnat_project, xnat_subject, xnat_session, xnat_scan,
                  xnat_host=None, xnat_user=None, xnat_pass=None, number_core=1, suffix=""):
         super(Spider_GIF_Parcellation, self).__init__(spider_path, jobdir, xnat_project, xnat_subject, xnat_session, xnat_scan,
-                                            xnat_host, xnat_user, xnat_pass, suffix)
+                                            xnat_host, xnat_user, xnat_pass, suffix, subdir=False)
         self.inputs = list()
         self.number_core = number_core
         # Print version for Niftyreg - GIFi
