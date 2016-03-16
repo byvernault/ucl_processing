@@ -41,10 +41,12 @@ def parse_args():
             --host : host for XNAT (default: XNAT_HOST env variable)
             --user : user on XNAT (default: XNAT_USER env variable)
         your arguments:
-            --scansType : scan types to register to the reference
-            --scanRef : scan ID for the reference from XNAT
+            --adc : ADC scan ID in the session on XNAT
+            --t2 : T2 scan ID in the session on XNAT
             --regAladin : path to reg_aladin's executable
             --argsRegAladin : arguments for Reg Aladin. Default: -maxit 15 -ln 4 -lp 4 -interp 1
+            --regf3d : path to reg_f3d's executable
+            --argRegf3d : arguments for reg_f3d. Default: -ln 4 -lp 4 -jl 0.1 -be 0.05 -maxit 250 -lncc 0 5.0 -sx 2.5
             --openmp_core : number of core use by reg_aladin. Default: one
 
         :return: argument parser object created by parse_args()
