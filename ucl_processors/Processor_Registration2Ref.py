@@ -23,14 +23,14 @@ LOGGER = logging.getLogger('dax')
 # Default values for arguments:
 # EDIT PARAMETERS FOR YOUR SPIDER CASE (SPIDER_PATH, WALLTIME, etc...)
 DEFAULT_SPIDER_PATH = '/home/byvernau/Xnat-management/ucl_processing/ucl_spiders/Spider_Registration2Ref_v1_0_0.py'
-DEFAULT_WALLTIME = '04:00:00'
+DEFAULT_WALLTIME = '00:30:00'
 DEFAULT_MEM = 2048
 DEFAULT_PPN = 1
 DEFAULT_TYPES = 'all'
 DEFAULT_REG_ALADIN = '/share/apps/cmic/niftypipe_deps/bin/reg_aladin'
 
 # Format for the spider command line
-SPIDER_FORMAT = '''python {spider} -p {proj} -s {subj} -e {sess} -d {dir} --host "{host}" --suffix "{suffix_proc}" --scansID {sources} --scanRef {target} --regAladin {regaladin} --openm_core {number_core}'''
+SPIDER_FORMAT = '''python {spider} -p {proj} -s {subj} -e {sess} -d {dir} --suffix "{suffix_proc}" --scansID {sources} --scanRef {target} --regAladin {regaladin} --openm_core {number_core}'''
 
 class Registration2Ref_Processor(SessionProcessor):
     '''
@@ -48,8 +48,7 @@ class Registration2Ref_Processor(SessionProcessor):
     def __init__(self, spider_path=DEFAULT_SPIDER_PATH, version=None,
                  walltime=DEFAULT_WALLTIME, mem_mb=DEFAULT_MEM, ppn=DEFAULT_PPN,
                  target_type=None, sources_type=DEFAULT_TYPES,
-                 reg_aladin_exe=DEFAULT_REG_ALADIN, xnat_host='',
-                 suffix_proc=''):
+                 reg_aladin_exe=DEFAULT_REG_ALADIN, suffix_proc=''):
         super(Registration2Ref_Processor, self).__init__(walltime, mem_mb, spider_path, version,
                                                          ppn=ppn, suffix_proc=suffix_proc)
         # Reference
@@ -64,8 +63,6 @@ class Registration2Ref_Processor(SessionProcessor):
                 sources_type = sources_type.split(',')
         if not sources_type:
             raise Exception("Processor_Registration2Ref: scantypes to register not set. Please edit your settings file.")
-        #Xnat Host
-        self.xnat_host = xnat_host
         # Reg Aladin
         if not os.path.exists(reg_aladin_exe):
             raise Exception("Processor_Registration2Ref: reg_aladin path given not found: %s." % reg_aladin_exe)
@@ -124,10 +121,10 @@ class Registration2Ref_Processor(SessionProcessor):
                                    subj=subj_label,
                                    sess=sess_label,
                                    dir=jobdir,
-                                   host=self.xnat_host,
                                    target=target_id,
                                    sources=sources_id,
                                    regaladin=self.regaladin,
-                                   number_core=self.ppn)
+                                   number_core=self.ppn,
+                                   suffix_proc=self.suffix_proc)
 
         return [cmd]

@@ -31,7 +31,7 @@ DEFAULT_GIF_PATH = '/share/apps/cmic/niftypipe/bin/perform_gif_propagation.py'
 DEFAULT_SCAN_TYPES = ['T1', 'MPRAGE'] # ADD SCAN TYPES
 
 # Format for the spider command line
-SPIDER_FORMAT = '''python {spider} -p {proj} -s {subj} -e {sess} -c {scan} -d {dir} --host "{host}" --suffix "{suffix_proc}" --dbt {template} --gif {gif_path} --openmp_core {number_core} --working_dir "{working_dir}"'''
+SPIDER_FORMAT = '''python {spider} -p {proj} -s {subj} -e {sess} -c {scan} -d {dir} --suffix "{suffix_proc}" --dbt {template} --gif {gif_path} --openmp_core {number_core} --working_dir "{working_dir}"'''
 
 class Processor_GIF_Parcellation(ScanProcessor):
     '''
@@ -47,11 +47,10 @@ class Processor_GIF_Parcellation(ScanProcessor):
     '''
     def __init__(self, spider_path=DEFAULT_SPIDER_PATH, version=None,
                  walltime=DEFAULT_WALLTIME, mem_mb=DEFAULT_MEM, ppn=DEFAULT_PPN,
-                 db_template=DEFAULT_TEMPLATE, gif=DEFAULT_GIF_PATH, xnat_host='',
+                 db_template=DEFAULT_TEMPLATE, gif=DEFAULT_GIF_PATH,
                  scan_types=DEFAULT_SCAN_TYPES, suffix_proc='', working_dir=DEFAULT_WORKING_DIR):
         super(Processor_GIF_Parcellation, self).__init__(scan_types, walltime, mem_mb, spider_path,
                                                          version, ppn=ppn, suffix_proc=suffix_proc)
-        self.xnat_host = xnat_host
         self.db_template = db_template
         self.gif = gif
         self.working_dir = working_dir
@@ -98,7 +97,6 @@ class Processor_GIF_Parcellation(ScanProcessor):
                                    sess=sess_label,
                                    scan=scan_label,
                                    dir=jobdir,
-                                   host=self.xnat_host,
                                    suffix_proc=self.suffix_proc,
                                    template=self.db_template,
                                    gif_path=self.gif,
