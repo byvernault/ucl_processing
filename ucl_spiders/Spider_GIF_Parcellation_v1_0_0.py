@@ -12,7 +12,7 @@ __email__ = "b.yvernault@ucl.ac.uk"
 __purpose__ = "Parcellation of the brain using GIF: Geodesic Information Flow."
 __spider_name__ = "GIF_Parcellation"
 __version__ = "1.0.0"
-__modifications__ = "2016-02-05 13:52:08.737570 - Original write"
+__modifications__ = "2016-03-15 14:56 - Adding working_dir options"
 
 # Python packages import
 import os
@@ -26,11 +26,9 @@ import subprocess as sb
 from datetime import datetime
 from dax import spiders, ScanSpider
 
-
-
 YLABELS = ['Bias Corrected', 'Brain', 'labels', 'Segmentation', 'tiv', 'prior']
 CMAPS = ['gray', 'gray', None, 'gray', 'gray', None]
-GIF_CMD = """python {exe_path} -i {input} -o {output} -d {db_xml} --no_qsub --openmp_core {number_core} --n_procs 1"""
+GIF_CMD = """python {exe_path} -i {input} -o {output} -d {db_xml} --no_qsub --openmp_core {number_core} --n_procs 1 --working_dir '{working_dir}'"""
 
 def parse_args():
     '''
@@ -48,12 +46,14 @@ def parse_args():
 	--dbt    : gif-based database xml file describing the inputs
 	--gif    : Path to the Gif python script: perform_gif_propagation.py
 	--openmp_core : number of core use by reg_aladin. Default: one
+    --working_dir : working directory for temp files
     :return: argument parser object created by parse_args()
     '''
     ap = spiders.get_scan_argparser("GIF_Parcellation", "Parcellation of the brain using GIF: Geodesic Information Flow.")
     ap.add_argument("--dbt", dest="dbtemplate", help="gif-based database xml file describing the inputs.", required=True)
     ap.add_argument("--gif", dest="gif_script", help="Path to the Gif python script: perform_gif_propagation.py.", required=True)
     ap.add_argument("--openmp_core", dest="openmp_core", help="Number of core used by reg_aladin.", required=False, default=1)
+    ap.add_argument("--working_dir", dest="working_dir", help="working directory for temp files. Default: output dir", default="")
     return ap.parse_args()
 
 class Spider_GIF_Parcellation(ScanSpider):
@@ -97,7 +97,7 @@ class Spider_GIF_Parcellation(ScanSpider):
             os.makedirs(folder)
         self.inputs.extend(self.download(self.xnat_scan, resource, folder))
 
-    def run(self, gif_script, dbtemplate):
+    def run(self, gif_script, dbtemplate, working_dir):
         '''
             Method running the process for the spider on the inputs data
 
@@ -105,6 +105,9 @@ class Spider_GIF_Parcellation(ScanSpider):
             :param dbtemplate: gif-based database xml file describing the inputs
             :return: None
         '''
+        if len(working_dir) > 0 and not os.path.exists(working_dir):
+            os.makedirs(working_dir)
+
         if gif_script.endswith('perform_gif_propagation.py'):
             exe_path = gif_script
         else:
@@ -119,7 +122,8 @@ class Spider_GIF_Parcellation(ScanSpider):
                                  input=self.inputs[0],
                                  output=os.path.join(self.jobdir, 'outputs'),
                                  db_xml=dbtemplate,
-                                 number_core=self.number_core)
+                                 number_core=self.number_core
+                                 working_dir=working_dir)
             self.run_system_cmd(cmd)
             self.make_pdf()
 

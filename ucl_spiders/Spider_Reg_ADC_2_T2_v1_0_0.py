@@ -1,23 +1,22 @@
 '''
     Author:         Benjamin Yvernault
     contact:        b.yvernault@ucl.ac.uk
-    Spider name:    Registration2Ref
+    Spider name:    Reg_ADC_2_T2
     Spider version: 1.0.0
-    Creation date:  2016-02-22 16:46:39.832273
-    Purpose:        Register the images from a session to one of the scan (reference)
+    Creation date:  2016-03-15 13:33:03.911277
+    Purpose:        Register ADC scan to T2 scan
 '''
 
 __author__ = "Benjamin Yvernault"
 __email__ = "b.yvernault@ucl.ac.uk"
-__purpose__ = "Register the images from a session to one of the scan (reference)"
-__spider_name__ = "Registration2Ref"
+__purpose__ = "Register ADC scan to T2 scan"
+__spider_name__ = "Reg_ADC_2_T2"
 __version__ = "1.0.0"
-__modifications__ = "2016-02-22 16:46:39.832273 - Original write"
+__modifications__ = "2016-03-15 13:33:03.911277 - Original write"
 
 # Python packages import
 import os
 import sys
-import glob
 import numpy as np
 import nibabel as nib
 import subprocess as sb
@@ -25,8 +24,10 @@ from datetime import datetime
 import matplotlib.pyplot as plt
 from dax import spiders, XnatUtils, SessionSpider
 
-REG_ALADIN_CMD = """{exe_path} --flo {input} --ref {reference} --aff {affine} --res {output} {args}"""
-RA_ARGS = """ --floUpThr 1000 --smooF 0 --maxit 5 --refUpThr 1000 --interp 0 --lp 3 --smooR 0 --ln 3 --pi 50 --refLowThr 0 --smooF 0 --maxit 5 --refUpThr 1000 --interp 0 --lp 3 --smooR 0 --ln 3 --pi 50 --refLowThr 0 --pv 50 --floLowThr 0 """
+REG_ALADIN_CMD = "{exe_path} -ref {ref} -flo {flo} -res {res} -aff {aff} {args}"
+REG_F3D_CMD = "{exe_path} -ref {ref} -flo {flo} -aff {aff} -cpp {cpp} -res {res} {args}"
+DEFAULT_ARGS_REG_ALADIN = " -maxit 15 -ln 4 -lp 4 -interp 1"
+DEFAULT_ARGS_REG_F3D = " -ln 4 -lp 4 -jl 0.1 -be 0.05 -maxit 250 -lncc 0 5.0 -sx 2.5"
 
 def parse_args():
     '''
@@ -43,20 +44,24 @@ def parse_args():
             --scansType : scan types to register to the reference
             --scanRef : scan ID for the reference from XNAT
             --regAladin : path to reg_aladin's executable
+            --argsRegAladin : arguments for Reg Aladin. Default: -maxit 15 -ln 4 -lp 4 -interp 1
             --openmp_core : number of core use by reg_aladin. Default: one
 
         :return: argument parser object created by parse_args()
     '''
-    ap = spiders.get_session_argparser("Registration2Ref", "Register the images from a session to one of the scan (reference)")
-    ap.add_argument("--scansID", dest="scans_id", help="Scans ID from XNAT to register to reference.", required=True)
-    ap.add_argument("--scanRef", dest="scan_ref", help="Scan ID from XNAT of the reference scan for the registration.", required=True)
+    ap = spiders.get_session_argparser("Reg_ADC_2_T2", "Register ADC scan to T2 scan")
+    ap.add_argument("--adc", dest="adc_id", help="ADC Scan ID from XNAT.", required=True)
+    ap.add_argument("--t2", dest="t2_id", help="T2 Scan ID from XNAT.", required=True)
     ap.add_argument("--regAladin", dest="reg_aladin_exe", help="path to reg_aladin's executable.", required=True)
+    ap.add_argument("--argRegAladin", dest="args_reg_aladin", help="Argument for reg_aladin. Default: -maxit 15 -ln 4 -lp 4 -interp 1.", default=DEFAULT_ARGS_REG_ALADIN)
+    ap.add_argument("--regf3d", dest="regf3d_exe", help="path to reg_f3d's executable.", required=True)
+    ap.add_argument("--argRegf3d", dest="args_regf3d", help="Argument for reg_f3d. Default: -maxit 15 -ln 4 -lp 4 -interp 1.", default=DEFAULT_ARGS_REG_F3D)
     ap.add_argument("--openmp_core", dest="openmp_core", help="Number of core used by reg_aladin.", required=False, default=1)
     return ap.parse_args()
 
-class Spider_Registration2Ref(SessionSpider):
+class Spider_Reg_ADC_2_T2(SessionSpider):
     '''
-        Session Spider class to do: Register the images from a session to one of the scan (reference)
+        Session Spider class to do: Register ADC scan to T2 scan
 
         :param spider_path: spider file path
         :param jobdir: directory for temporary files
@@ -68,85 +73,122 @@ class Spider_Registration2Ref(SessionSpider):
         :param xnat_pass: password for XNAT if not set in environment variables
         :param suffix: suffix to the assessor creation
     '''
-    def __init__(self, spider_path, jobdir, xnat_project, xnat_subject, xnat_session, scan_ref, scans_id,
+    def __init__(self, spider_path, jobdir, xnat_project, xnat_subject, xnat_session,
                  xnat_host=None, xnat_user=None, xnat_pass=None, suffix=""):
-        super(Spider_Registration2Ref, self).__init__(spider_path, jobdir, xnat_project, xnat_subject, xnat_session,
-                                                      xnat_host, xnat_user, xnat_pass, suffix)
-        self.xnat_scan_ref = scan_ref
-        self.scans_id = scans_id
+        super(Spider_Reg_ADC_2_T2, self).__init__(spider_path, jobdir, xnat_project, xnat_subject, xnat_session,
+                                            xnat_host, xnat_user, xnat_pass, suffix)
         self.inputs = list()
-        self.reference = list()
         self.outputs = list()
-        self.pdf_final = os.path.join(self.jobdir, 'Registration2Ref.pdf')
+        self.t2 = list()
+        self.pdf_final = os.path.join(self.jobdir, 'Registration_ADC_2_T2.pdf')
+        # Check Executable:
+        self.reg_aladin_exe = self.check_exe(ARGS.reg_aladin_exe, 'reg_aladin')
+        self.reg_f3d_exe = self.check_exe(ARGS.regf3d_exe, 'reg_f3d')
         # Print version for Niftyreg - GIFi
-        pversion = sb.Popen([ARGS.reg_aladin_exe, '--version'], stdout=sb.PIPE,
+        pversion = sb.Popen([self.reg_aladin_exe, '--version'], stdout=sb.PIPE,
                                                                 stderr=sb.PIPE)
         nve_version, _ = pversion.communicate()
         self.time_writer('reg_aladin (Niftyreg) version: %s' % (nve_version.strip()))
+        # Print version for Niftyreg - GIFi
+        pversion = sb.Popen([self.reg_f3d_exe, '--version'], stdout=sb.PIPE,
+                                                                stderr=sb.PIPE)
+        nve_version, _ = pversion.communicate()
+        self.time_writer('reg_f3d (Niftyreg) version: %s' % (nve_version.strip()))
 
     def pre_run(self):
         '''
             Method to download data from XNAT
+
+            :param argument_parse: argument parser object return by parse_args()
         '''
         resource = 'NIFTI' #resource to download from the scan on XNAT
         input_folder = os.path.join(self.jobdir, 'inputs')
         if not os.path.exists(input_folder):
             os.makedirs(input_folder)
+        adc_folder = os.path.join(input_folder, 'ADC')
+        if not os.path.exists(adc_folder):
+            os.makedirs(adc_folder)
+        t2_folder = os.path.join(input_folder, 'T2')
+        if not os.path.exists(t2_folder):
+            os.makedirs(t2_folder)
 
-        for scan_id in self.scans_id:
-            scan_path = os.path.join(input_folder, scan_id)
-            if not os.path.exists(scan_path):
-                os.makedirs(scan_path)
-            self.inputs.extend(self.download(scan_id, resource, scan_path))
+        self.inputs.extend(self.download(ARGS.adc_id, resource, adc_folder))
+        self.t2.extend(self.download(ARGS.t2_id, resource, t2_folder))
 
-        # Find and select reference:
-        self.reference.extend(self.download(self.xnat_scan_ref, resource, input_folder))
+    @staticmethod
+    def check_exe(executable, name):
+        """
+            Method to check the executable
 
-    def run(self, reg_aladin_exe):
+            :param executable: executable path
+            :param name: name of Executable
+            :return: Complete path to the executable
+        """
+        if executable == name:
+            print name
+            return name
+        else:
+            executable = os.path.abspath(executable)
+            if executable.endswith(name):
+                path = executable
+            elif os.path.isdir(executable):
+                path = os.path.join(executable, name)
+
+            if not os.path.exists(executable):
+                raise Exception("Executable '%s' not found" % (executable))
+
+            return path
+
+    def run(self):
         '''
             Method running the process for the spider on the inputs data
         '''
-        if reg_aladin_exe.endswith('reg_aladin'):
-            exe_path = reg_aladin_exe
-        elif os.path.isdir(reg_aladin_exe):
-            exe_path = os.path.join(reg_aladin_exe, "reg_aladin")
+        output_folder = os.path.join(self.jobdir, 'outputs')
+        if not os.path.exists(output_folder):
+            os.makedirs(output_folder)
 
-        if not os.path.exists(exe_path):
-            raise Exception("Executable '%s' not found" % (exe_path))
-        else:
-            output_folder = os.path.join(self.jobdir, 'outputs')
-            if not os.path.exists(output_folder):
-                os.makedirs(output_folder)
+        # REG ALADIN:
+        self.time_writer("reg_aladin with ref %s and flo %s" % (self.inputs[0], self.t2[0]))
+        aladin_output = os.path.join(output_folder, "ADC_reg_2_t2_reg_aladin.nii")
+        affine_fpath = os.path.join(output_folder, "ADC_reg_2_t2_affine_transformation.txt")
 
-            for scan_id in self.scans_id:
-                prefix_str = '%s_reg2_%s' % (scan_id, self.xnat_scan_ref)
-                reg_folder = os.path.join(output_folder, prefix_str)
-                if not os.path.exists(reg_folder):
-                    os.makedirs(reg_folder)
-                input_fpath = glob.glob(os.path.join(self.jobdir, 'inputs', scan_id, 'NIFTI', '*.nii.gz'))[0]
-                self.time_writer("Register %s to %s" % (input_fpath, self.reference[0]))
-                output_name = "%s.nii" % (prefix_str)
-                affine_name = "%s_affine_transformation.txt" % (prefix_str)
-                output_fpath = os.path.join(reg_folder, output_name)
-                affine_fpath = os.path.join(reg_folder, affine_name)
-                cmd = REG_ALADIN_CMD.format(exe_path=exe_path,
-                                            reference=self.reference[0],
-                                            input=input_fpath,
-                                            output=output_fpath,
-                                            affine=affine_fpath,
-                                            args=RA_ARGS)
-                self.run_system_cmd(cmd)
-                XnatUtils.gzip_nii(reg_folder)
-                self.outputs.append(reg_folder)
-            self.make_pdf()
+        cmd = REG_ALADIN_CMD.format(exe_path=self.reg_aladin_exe,
+                                    ref=self.t2[0],
+                                    flo=self.inputs[0],
+                                    res=aladin_output,
+                                    aff=affine_fpath,
+                                    args=ARGS.args_reg_aladin)
+        self.run_system_cmd(cmd)
+        # Check that the affine file exists:
+        if not os.path.exists(affine_fpath):
+            raise Exception('Reg_aladin failed. File %s not found.' % affine_fpath)
+
+        #REG_F3D
+        self.time_writer("reg_f3d with ref %s and flo %s and aff %s" % (self.inputs[0], self.t2[0], affine_fpath))
+        f3d_output = os.path.join(output_folder, "ADC_reg_2_t2_reg_f3d.nii")
+        f3d_cpp = os.path.join(output_folder, "ADC_reg_2_t2_reg_f3d_cpp.nii")
+        cmd = REG_F3D_CMD.format(exe_path=self.reg_f3d_exe,
+                                 ref=self.t2[0],
+                                 flo=self.inputs[0],
+                                 res=f3d_output,
+                                 cpp=f3d_cpp,
+                                 aff=affine_fpath,
+                                 args=ARGS.args_regf3d)
+        self.run_system_cmd(cmd)
+        XnatUtils.gzip_nii(output_folder)
+        self.outputs.extend([{'label':'reg_aladin_results', 'image':aladin_output+'.gz'},
+                             {'label':'reg_f3d_results', 'image':f3d_output+'.gz'}])
+        self.make_pdf()
 
     def finish(self):
         '''
             Method to copy the results in the Spider Results folder dax.RESULTS_DIR
         '''
-        results_dict = {'PDF': self.pdf_final}
-        for out_folder in self.outputs:
-            results_dict[os.path.basename(out_folder)] = out_folder
+        results_dict = {'PDF': self.pdf_final,
+                        'REG_ALA': os.path.join(self.jobdir, 'outputs', "ADC_reg_2_t2_reg_aladin.nii.gz"),
+                        'AFF': os.path.join(self.jobdir, 'outputs', "ADC_reg_2_t2_affine_transformation.txt"),
+                        'REG_F3D': os.path.join(self.jobdir, 'outputs', "ADC_reg_2_t2_reg_f3d.nii.gz"),
+                        'CPP': os.path.join(self.jobdir, 'outputs', "ADC_reg_2_t2_reg_f3d_cpp.nii.gz")}
         self.upload_dict(results_dict)
         self.end()
 
@@ -218,30 +260,37 @@ class Spider_Registration2Ref(SessionSpider):
 
         pdf_page_number = 0 # 5 images per pages
         fig = plt.figure(0, figsize=(7.5, 10))
-        total_nb_pages = (len(self.outputs) + 1)/nb_images_per_page
+        total_nb_pages = (len(self.outputs) + 2)/nb_images_per_page
         if total_nb_pages == 0:
             total_nb_pages = 1
-        # Plot the reference
+        # Plot the Inputs
         # Open niftis with nibabel
-        f_img = nib.load(self.reference[0])
+        f_img = nib.load(self.t2[0])
         f_img_data = f_img.get_data()
         # Draw
         if len(f_img_data.shape) == 3:
             data = f_img_data
         elif len(f_img_data.shape) == 4:
             data = f_img_data[:, :, :, f_img_data.shape[3]/2]
-        self.plot_images(fig, data, nb_images_per_page, 0, 'Reference')
+        self.plot_images(fig, data, nb_images_per_page, 0, 'T2 scan')
+        # Open niftis with nibabel
+        f_img = nib.load(self.inputs[0])
+        f_img_data = f_img.get_data()
+        # Draw
+        if len(f_img_data.shape) == 3:
+            data = f_img_data
+        elif len(f_img_data.shape) == 4:
+            data = f_img_data[:, :, :, f_img_data.shape[3]/2]
+        self.plot_images(fig, data, nb_images_per_page, 1, 'ADC scan')
 
         page_0_saved = False
-        for index, out_folder in enumerate(self.outputs):
-            # Get the output images
-            nii_file = glob.glob(os.path.join(out_folder, '*.nii.gz'))
-            if len(nii_file) != 1:
-                raise Exception('%s output image not found or more than one file found.' % (nii_file))
+        for index, out_dict in enumerate(self.outputs):
+            if not os.path.exists(out_dict['image']):
+                raise Exception('%s output image not found.' % (out_dict['image']))
 
-            if (index+1)/5 != pdf_page_number:
+            if (index+2)/5 != pdf_page_number:
                 page_0_saved = True
-                pdf_name = 'Registration2Ref_page%s.pdf' % (pdf_page_number)
+                pdf_name = 'Reg_ADC_2_T2_page%s.pdf' % (pdf_page_number)
                 pdf_page = os.path.join(self.jobdir, pdf_name)
                 # Save figure to PDF page
                 self.save_pdf_page(fig, pdf_page, date, pdf_page_number, total_nb_pages)
@@ -250,14 +299,14 @@ class Spider_Registration2Ref(SessionSpider):
                 fig = plt.figure(pdf_page_number, figsize=(7.5, 10))
 
             # Open niftis with nibabel
-            f_img = nib.load(nii_file[0])
+            f_img = nib.load(out_dict['image'])
             f_img_data = f_img.get_data()
             # Draw
             if len(f_img_data.shape) == 3:
                 data = f_img_data
             elif len(f_img_data.shape) == 4:
                 data = f_img_data[:, :, :, f_img_data.shape[3]/2]
-            self.plot_images(fig, data, nb_images_per_page, index+1, os.path.basename(nii_file[0]).split('.')[0])
+            self.plot_images(fig, data, nb_images_per_page, index+2, out_dict['label'])
 
         # If only 5 or less images, save PDF zero
         if not page_0_saved:
@@ -272,21 +321,16 @@ class Spider_Registration2Ref(SessionSpider):
 
 if __name__ == '__main__':
     ARGS = parse_args()
-    # Set the environment variable:
-    os.environ['OMP_NUM_THREADS'] = ARGS.openmp_core
-
     # generate spider object:
-    spider_obj = Spider_Registration2Ref(spider_path=sys.argv[0],
-                                         jobdir=ARGS.temp_dir,
-                                         xnat_project=ARGS.proj_label,
-                                         xnat_subject=ARGS.subj_label,
-                                         xnat_session=ARGS.sess_label,
-                                         scan_ref=ARGS.scan_ref,
-                                         scans_id=ARGS.scans_id.split(','),
-                                         xnat_host=ARGS.host,
-                                         xnat_user=ARGS.user,
-                                         xnat_pass=None,
-                                         suffix=ARGS.suffix)
+    spider_obj = Spider_Reg_ADC_2_T2(spider_path=sys.argv[0],
+                               jobdir=ARGS.temp_dir,
+                               xnat_project=ARGS.proj_label,
+                               xnat_subject=ARGS.subj_label,
+                               xnat_session=ARGS.sess_label,
+                               xnat_host=ARGS.host,
+                               xnat_user=ARGS.user,
+                               xnat_pass=None,
+                               suffix=ARGS.suffix)
     # print some information before starting
     spider_obj.print_init(ARGS, "Benjamin Yvernault", "b.yvernault@ucl.ac.uk")
 
@@ -294,7 +338,7 @@ if __name__ == '__main__':
     spider_obj.pre_run()
 
     # Run method
-    spider_obj.run(ARGS.reg_aladin_exe)
+    spider_obj.run()
 
     # Finish method to copy results
     spider_obj.finish()
