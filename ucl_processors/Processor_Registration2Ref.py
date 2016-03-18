@@ -22,7 +22,8 @@ LOGGER = logging.getLogger('dax')
 
 # Default values for arguments:
 # EDIT PARAMETERS FOR YOUR SPIDER CASE (SPIDER_PATH, WALLTIME, etc...)
-DEFAULT_SPIDER_PATH = '/home/byvernau/Xnat-management/ucl_processing/ucl_spiders/Spider_Registration2Ref_v1_0_0.py'
+HOME = os.path.expanduser("~")
+DEFAULT_SPIDER_PATH = os.path.join(HOME, 'Xnat-management/ucl_processing/ucl_spiders/Spider_Registration2Ref_v1_0_0.py')
 DEFAULT_WALLTIME = '00:30:00'
 DEFAULT_MEM = 2048
 DEFAULT_PPN = 1
