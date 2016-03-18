@@ -90,6 +90,8 @@ class Processor_GIF_Parcellation(ScanProcessor):
         sess_label = assessor.parent().label()
         assr_label = assessor.label()
         scan_label = assr_label.split('-x-')[3]
+        
+        working_dir = os.path.join(self.working_dir, assr_label)
 
         cmd = SPIDER_FORMAT.format(spider=self.spider_path,
                                    proj=proj_label,
@@ -101,6 +103,6 @@ class Processor_GIF_Parcellation(ScanProcessor):
                                    template=self.db_template,
                                    gif_path=self.gif,
                                    number_core=self.ppn,
-                                   working_dir=self.working_dir)
+                                   working_dir=working_dir)
 
         return [cmd]
