@@ -13,6 +13,7 @@ __processor_name__ = "Processor_GIF_Parcellation"
 __modifications__ = "2016-03-15 14:56 - Adding working_dir options"
 
 # Python packages import
+import os
 import logging
 from dax import XnatUtils, ScanProcessor
 
@@ -21,7 +22,8 @@ LOGGER = logging.getLogger('dax')
 
 # Default values for arguments:
 # EDIT PARAMETERS FOR YOUR SPIDER CASE (SPIDER_PATH, WALLTIME, etc...)
-DEFAULT_SPIDER_PATH = '/home/byvernau/Xnat-management/ucl_processing/ucl_spiders/Spider_GIF_Parcellation_v1_0_0.py'
+HOME = os.path.expanduser("~")
+DEFAULT_SPIDER_PATH = os.path.join(HOME, 'Xnat-management/ucl_processing/ucl_spiders/Spider_GIF_Parcellation_v1_0_0.py')
 DEFAULT_WALLTIME = '48:00:00'
 DEFAULT_MEM = 3850
 DEFAULT_PPN = 4
