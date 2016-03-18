@@ -17,11 +17,14 @@ __modifications__ = "2016-03-15 13:33:03.911277 - Original write"
 # Python packages import
 import os
 import sys
+import time
+import dicom
+import datetime
 import numpy as np
 import nibabel as nib
 import subprocess as sb
-from datetime import datetime
 import matplotlib.pyplot as plt
+from dicom.dataset import Dataset, FileDataset
 from dax import spiders, XnatUtils, SessionSpider
 
 REG_ALADIN_CMD = "{exe_path} -ref {ref} -flo {flo} -res {res} -aff {aff} {args}"
@@ -79,9 +82,14 @@ class Spider_Reg_ADC_2_T2(SessionSpider):
                  xnat_host=None, xnat_user=None, xnat_pass=None, suffix=""):
         super(Spider_Reg_ADC_2_T2, self).__init__(spider_path, jobdir, xnat_project, xnat_subject, xnat_session,
                                             xnat_host, xnat_user, xnat_pass, suffix)
-        self.inputs = list()
+        # Inputs
+        self.adc_nii = list()
+        self.t2_nii = list()
+        self.adc_dcm = list()
+        self.t2_dcm = list()
+
+        # Outputs
         self.outputs = list()
-        self.t2 = list()
         self.pdf_final = os.path.join(self.jobdir, 'Registration_ADC_2_T2.pdf')
         # Check Executable:
         self.reg_aladin_exe = self.check_exe(ARGS.reg_aladin_exe, 'reg_aladin')
@@ -113,9 +121,18 @@ class Spider_Reg_ADC_2_T2(SessionSpider):
         t2_folder = os.path.join(input_folder, 'T2')
         if not os.path.exists(t2_folder):
             os.makedirs(t2_folder)
+        adc_dcm = os.path.join(adc_folder, 'DICOM')
+        if not os.path.exists(adc_dcm):
+            os.makedirs(adc_dcm)
+        t2_dcm = os.path.join(t2_folder, 'DICOM')
+        if not os.path.exists(t2_dcm):
+            os.makedirs(t2_dcm)
 
-        self.inputs.extend(self.download(ARGS.adc_id, resource, adc_folder))
-        self.t2.extend(self.download(ARGS.t2_id, resource, t2_folder))
+        self.adc_nii.extend(self.download(ARGS.adc_id, resource, adc_folder))
+        self.t2_nii.extend(self.download(ARGS.t2_id, resource, t2_folder))
+        self.adc_dcm.extend(self.download(ARGS.adc_id, 'DICOM', adc_dcm))
+        self.t2_dcm.extend(self.download(ARGS.t2_id, 'DICOM', t2_dcm))
+
 
     @staticmethod
     def check_exe(executable, name):
@@ -150,13 +167,13 @@ class Spider_Reg_ADC_2_T2(SessionSpider):
             os.makedirs(output_folder)
 
         # REG ALADIN:
-        self.time_writer("reg_aladin with ref %s and flo %s" % (self.inputs[0], self.t2[0]))
+        self.time_writer("reg_aladin with ref %s and flo %s" % (self.adc_nii[0], self.t2_nii[0]))
         aladin_output = os.path.join(output_folder, "ADC_reg_2_t2_reg_aladin.nii")
         affine_fpath = os.path.join(output_folder, "ADC_reg_2_t2_affine_transformation.txt")
 
         cmd = REG_ALADIN_CMD.format(exe_path=self.reg_aladin_exe,
-                                    ref=self.t2[0],
-                                    flo=self.inputs[0],
+                                    ref=self.t2_nii[0],
+                                    flo=self.adc_nii[0],
                                     res=aladin_output,
                                     aff=affine_fpath,
                                     args=ARGS.args_reg_aladin)
@@ -166,12 +183,12 @@ class Spider_Reg_ADC_2_T2(SessionSpider):
             raise Exception('Reg_aladin failed. File %s not found.' % affine_fpath)
 
         #REG_F3D
-        self.time_writer("reg_f3d with ref %s and flo %s and aff %s" % (self.inputs[0], self.t2[0], affine_fpath))
+        self.time_writer("reg_f3d with ref %s and flo %s and aff %s" % (self.adc_nii[0], self.t2_nii[0], affine_fpath))
         f3d_output = os.path.join(output_folder, "ADC_reg_2_t2_reg_f3d.nii")
         f3d_cpp = os.path.join(output_folder, "ADC_reg_2_t2_reg_f3d_cpp.nii")
         cmd = REG_F3D_CMD.format(exe_path=self.reg_f3d_exe,
-                                 ref=self.t2[0],
-                                 flo=self.inputs[0],
+                                 ref=self.t2_nii[0],
+                                 flo=self.adc_nii[0],
                                  res=f3d_output,
                                  cpp=f3d_cpp,
                                  aff=affine_fpath,
@@ -180,7 +197,12 @@ class Spider_Reg_ADC_2_T2(SessionSpider):
         XnatUtils.gzip_nii(output_folder)
         self.outputs.extend([{'label':'reg_aladin_results', 'image':aladin_output+'.gz'},
                              {'label':'reg_f3d_results', 'image':f3d_output+'.gz'}])
+        # Make PDF
         self.make_pdf()
+        # Generate DICOM version of the reg_f3d results:
+        convert_nifti_2_dicoms(os.path.join(self.jobdir, 'outputs', "ADC_reg_2_t2_reg_f3d.nii.gz"),
+                               self.t2_dcm[0], self.adc_dcm[0],
+                               os.path.join(output_folder, 'reg_f3d_dicoms'), label="ADC_reg_f3d")
 
     def finish(self):
         '''
@@ -190,6 +212,7 @@ class Spider_Reg_ADC_2_T2(SessionSpider):
                         'REG_ALA': os.path.join(self.jobdir, 'outputs', "ADC_reg_2_t2_reg_aladin.nii.gz"),
                         'AFF': os.path.join(self.jobdir, 'outputs', "ADC_reg_2_t2_affine_transformation.txt"),
                         'REG_F3D': os.path.join(self.jobdir, 'outputs', "ADC_reg_2_t2_reg_f3d.nii.gz"),
+                        'OSIRIX' : os.path.join(self.jobdir, 'outputs', 'reg_f3d_dicoms'),
                         'CPP': os.path.join(self.jobdir, 'outputs', "ADC_reg_2_t2_reg_f3d_cpp.nii.gz")}
         self.upload_dict(results_dict)
         self.end()
@@ -254,7 +277,7 @@ class Spider_Reg_ADC_2_T2(SessionSpider):
         '''
         ## Define output files
         # Variables:
-        date = datetime.now()
+        date = datetime.datetime.now()
         nb_images_per_page = 5
 
         # PDF path:
@@ -267,7 +290,7 @@ class Spider_Reg_ADC_2_T2(SessionSpider):
             total_nb_pages = 1
         # Plot the Inputs
         # Open niftis with nibabel
-        f_img = nib.load(self.t2[0])
+        f_img = nib.load(self.t2_nii[0])
         f_img_data = f_img.get_data()
         # Draw
         if len(f_img_data.shape) == 3:
@@ -276,7 +299,7 @@ class Spider_Reg_ADC_2_T2(SessionSpider):
             data = f_img_data[:, :, :, f_img_data.shape[3]/2]
         self.plot_images(fig, data, nb_images_per_page, 0, 'T2 scan')
         # Open niftis with nibabel
-        f_img = nib.load(self.inputs[0])
+        f_img = nib.load(self.adc_nii[0])
         f_img_data = f_img.get_data()
         # Draw
         if len(f_img_data.shape) == 3:
@@ -321,18 +344,114 @@ class Spider_Reg_ADC_2_T2(SessionSpider):
             self.time_writer('INFO:saving final PDF: %s ' % cmd)
             os.system(cmd)
 
+def write_dicom(pixel_array, filename, ds_copy, ds_ori, volume_number,
+                series_number, sop_id):
+    """
+    INPUTS:
+    pixel_array: 2D numpy ndarray.  If pixel_array is larger than 2D, errors.
+    filename: string name for the output file.
+    """
+    # Set to zero negatives values in the image:
+    pixel_array[pixel_array<0] = 0
+
+    # Set the DICOM dataset
+    file_meta = Dataset()
+    file_meta.MediaStorageSOPClassUID = 'Secondary Capture Image Storage'
+    file_meta.MediaStorageSOPInstanceUID = ds_ori.SOPInstanceUID
+    file_meta.ImplementationClassUID = ds_ori.SOPClassUID
+    ds = FileDataset(filename, {}, file_meta = file_meta, preamble="\0"*128)
+
+    # Copy the tag from the original DICOM
+    for tag, value in ds_ori.items():
+        if tag != ds_copy.data_element("PixelData").tag:
+            ds[tag] = value
+
+    # Other tags to set
+    ds.SeriesNumber = series_number
+    ds.SeriesDescription = ds_ori.SeriesDescription + ' reg_f3d'
+    sop_uid = sop_id + str(datetime.datetime.now()).replace('-','').replace(':','').replace('.','').replace(' ','')
+    ds.SOPInstanceUID = sop_uid[:-1]
+    ds.ProtocolName = ds_ori.ProtocolName
+    ds.InstanceNumber = volume_number
+    # Set time:
+    ti = time.time()
+    ds.ContentDate = str(datetime.date.today()).replace('-','')
+    ds.ContentTime = str(ti)
+
+    # Copy from T2 the orientation tags:
+    ds.PatientPosition = ds_copy.PatientPosition
+    ds[0x20,0x32] = ds_copy[0x20,0x32] # Image Position
+    ds[0x20,0x37] = ds_copy[0x20,0x37] # Image Orientation
+    ds[0x18,0x50] = ds_copy[0x18,0x50] # Slice Thicknes
+    ds[0x18,0x88] = ds_copy[0x18,0x88] # Spacing Between Slices
+    ds[0x18,0x1312] = ds_copy[0x18,0x1312] # In-plane Phase Encoding
+    ds[0x28,0x10] = ds_copy[0x28,0x10] # rows
+    ds[0x28,0x11] = ds_copy[0x28,0x11] # columns
+    ds[0x28,0x30] = ds_copy[0x28,0x30] # Pixel spacing
+
+    # Set the Image pixel array
+    if pixel_array.dtype != np.uint16:
+        pixel_array = pixel_array.astype(np.uint16)
+    ds.PixelData = pixel_array.tostring()
+
+    # Save the image
+    ds.save_as(filename)
+
+def convert_nifti_2_dicoms(nifti_path, dicom_target, dicom_source, output_folder, label=None):
+    """
+    Convert 4D niftis generated by reg_f3d into DICOM files.
+
+    :param nifti_path: path to the nifti file
+    :param dicom_source: one dicom file from the source
+     for the registration for header info
+    :param dicom_target: one dicom file from the target
+     for the registration for header info
+    :param output_folder: folder where the DICOM files will be saved
+    :param label: name for the output dicom files
+    :return: None
+    """
+    if not os.path.isfile(nifti_path):
+        raise Exception("File %s not found after reg_f3d." % nifti_path)
+    # Load image from NIFTI
+    f_img = nib.load(nifti_path)
+    f_img_data = f_img.get_data()
+
+    # Load dicom headers
+    if not os.path.isfile(dicom_target):
+        raise Exception("DICOM File %s not found after reg_f3d." % dicom_target)
+    t2_dcm_obj = dicom.read_file(dicom_target)
+    if not os.path.isfile(dicom_source):
+        raise Exception("DICOM File %s not found after reg_f3d." % dicom_source)
+    adc_dcm_obj = dicom.read_file(dicom_source)
+
+    # Make output_folder:
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+
+    # Series Number and SOP UID
+    ti = time.time()
+    series_number = 86532 + int(str(ti)[2:4]) + int(str(ti)[4:6])
+    sop_id = adc_dcm_obj.SOPInstanceUID.split('.')
+    sop_id = '.'.join(sop_id[:-1])+'.'
+
+    for volume_index in range(f_img_data.shape[2]):
+        filename = os.path.join(output_folder, '%s_%s.dcm' % (label, str(volume_index)))
+        write_dicom(np.rot90(f_img_data[:, :, volume_index]), filename,
+                    t2_dcm_obj, adc_dcm_obj, volume_index, series_number, sop_id)
+
 if __name__ == '__main__':
     ARGS = parse_args()
     # generate spider object:
     spider_obj = Spider_Reg_ADC_2_T2(spider_path=sys.argv[0],
-                               jobdir=ARGS.temp_dir,
-                               xnat_project=ARGS.proj_label,
-                               xnat_subject=ARGS.subj_label,
-                               xnat_session=ARGS.sess_label,
-                               xnat_host=ARGS.host,
-                               xnat_user=ARGS.user,
-                               xnat_pass=None,
-                               suffix=ARGS.suffix)
+                                     jobdir=ARGS.temp_dir,
+                                     xnat_project=ARGS.proj_label,
+                                     xnat_subject=ARGS.subj_label,
+                                     xnat_session=ARGS.sess_label,
+                                     xnat_host=ARGS.host,
+                                     xnat_user=ARGS.user,
+                                     xnat_pass=None,
+                                     suffix=ARGS.suffix)
+
     # print some information before starting
     spider_obj.print_init(ARGS, "Benjamin Yvernault", "b.yvernault@ucl.ac.uk")
 
