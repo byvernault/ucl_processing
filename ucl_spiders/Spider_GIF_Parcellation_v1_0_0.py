@@ -324,7 +324,7 @@ if __name__ == '__main__':
     spider_obj.pre_run()
 
     # Run method
-    spider_obj.run(args.gif_script, args.dbtemplate)
+    spider_obj.run(args.gif_script, args.dbtemplate, args.working_dir)
 
     # Finish method to copy results
     spider_obj.finish()
