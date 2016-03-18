@@ -13,6 +13,7 @@ __processor_name__ = "Processor_Reg_ADC_2_T2"
 __modifications__ = "2016-03-16 10:17:34.887155 - Original write"
 
 # Python packages import
+import os
 import logging
 from dax import XnatUtils, SessionProcessor
 
@@ -21,7 +22,8 @@ LOGGER = logging.getLogger('dax')
 
 # Default values for arguments:
 # EDIT PARAMETERS FOR YOUR SPIDER CASE (SPIDER_PATH, WALLTIME, etc...)
-DEFAULT_SPIDER_PATH = '/home/byvernau/Xnat-management/ucl_processing/ucl_spiders/Spider_Reg_ADC_2_T2_v1_0_0.py'
+HOME = os.path.expanduser("~")
+DEFAULT_SPIDER_PATH = os.path.join(HOME, 'Xnat-management/ucl_processing/ucl_spiders/Spider_Reg_ADC_2_T2_v1_0_0.py')
 DEFAULT_WALLTIME = '02:00:00'
 DEFAULT_MEM = 2048
 DEFAULT_PPN = 1
