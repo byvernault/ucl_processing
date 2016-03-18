@@ -122,7 +122,7 @@ class Spider_GIF_Parcellation(ScanSpider):
                                  input=self.inputs[0],
                                  output=os.path.join(self.jobdir, 'outputs'),
                                  db_xml=dbtemplate,
-                                 number_core=self.number_core
+                                 number_core=self.number_core,
                                  working_dir=working_dir)
             self.run_system_cmd(cmd)
             self.make_pdf()
@@ -131,7 +131,7 @@ class Spider_GIF_Parcellation(ScanSpider):
         '''
             Method to copy the results in the Spider Results folder dax.RESULTS_DIR
         '''
-	# Images outputs:
+        # Images outputs:
         bias_corrected = glob.glob(os.path.join(self.jobdir, 'outputs', '*bias_corrected.nii.gz'))
         brain = glob.glob(os.path.join(self.jobdir, 'outputs', '*brain.nii.gz'))
         labels = glob.glob(os.path.join(self.jobdir, 'outputs', '*labels.nii.gz'))
