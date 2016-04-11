@@ -27,15 +27,15 @@ DEFAULT_SPIDER_PATH = os.path.join(HOME, 'Xnat-management/ucl_processing/ucl_spi
 DEFAULT_WALLTIME = '02:00:00'
 DEFAULT_MEM = 2048
 DEFAULT_PPN = 1
-DEFAULT_T2 = ['T2 Axial']
-DEFAULT_ADC = ['ADC']
+DEFAULT_TARGET = ['T2 Axial']
+DEFAULT_SOURCES = ['ADC', 'DCE']
 DEFAULT_REG_ALADIN = '/share/apps/cmic/niftypipe_deps/bin/reg_aladin'
 DEFAULT_REG_F3D = '/share/apps/cmic/niftypipe_deps/bin/reg_f3d'
 DEFAULT_ARGS_REG_ALADIN = " -maxit 15 -ln 4 -lp 4 -interp 1"
 DEFAULT_ARGS_REG_F3D = " -ln 4 -lp 4 -jl 0.1 -be 0.05 -maxit 250 -lncc 0 5.0 -sx 2.5"
 
 # Format for the spider command line
-SPIDER_FORMAT = '''python {spider} -p {proj} -s {subj} -e {sess} -d {dir} --suffix "{suffix_proc}" --adc {adc} --t2 {t2} --regAladin {regaladin} --argsRegAladin "{args_reg_ala}" --regf3d {regf3d} --argRegf3d "{args_reg_f3d}" --openmp_core {number_cores}'''
+SPIDER_FORMAT = '''python {spider} -p {proj} -s {subj} -e {sess} -d {dir} --suffix "{suffix_proc}" --sources {sources} --target {target} --regAladin {regaladin} --argsRegAladin "{args_reg_ala}" --regf3d {regf3d} --argRegf3d "{args_reg_f3d}" --openmp_core {number_cores}'''
 
 class Processor_Reg_ADC_2_T2(SessionProcessor):
     '''
@@ -49,15 +49,15 @@ class Processor_Reg_ADC_2_T2(SessionProcessor):
 
     :param suffix: suffix to the spider
     '''
-    def __init__(self, spider_path=DEFAULT_SPIDER_PATH, version=None, adc=DEFAULT_ADC, t2=DEFAULT_T2,
+    def __init__(self, spider_path=DEFAULT_SPIDER_PATH, version=None, sources=DEFAULT_SOURCES, target=DEFAULT_TARGET,
                  reg_aladin_exe=DEFAULT_REG_ALADIN, args_reg_aladin=DEFAULT_ARGS_REG_ALADIN,
                  reg_f3d_exe=DEFAULT_REG_F3D, args_reg_f3d=DEFAULT_ARGS_REG_F3D,
                  walltime=DEFAULT_WALLTIME, mem_mb=DEFAULT_MEM, ppn=DEFAULT_PPN,
                  suffix_proc=''):
         super(Processor_Reg_ADC_2_T2, self).__init__(walltime, mem_mb, spider_path, version,
                                                      ppn=ppn, suffix_proc=suffix_proc)
-        self.t2 = t2
-        self.adc = adc
+        self.target = XnatUtils.get_input_list(target, DEFAULT_TARGET)
+        self.sources = XnatUtils.get_input_list(sources, DEFAULT_SOURCES)
         self.reg_aladin_exe = reg_aladin_exe
         self.args_reg_aladin = args_reg_aladin
         self.reg_f3d_exe = reg_f3d_exe
@@ -90,12 +90,10 @@ class Processor_Reg_ADC_2_T2(SessionProcessor):
         if not source_cscans:
             LOGGER.debug('Processor_Registration2Ref: cannot run at all, no ADC image found')
             return -1, 'ADC not found'
-        if len(source_cscans) > 1:
-            LOGGER.debug('Processor_Registration2Ref: cannot run at all, too many ADC images found')
-            return 0, 'Too many ADC scans'
-        if not XnatUtils.has_resource(source_cscans[0], 'NIFTI'):
-            LOGGER.debug('Processor_Registration2Ref: cannot run, no NIFTI for ADC image')
-            return 0, "no ADC's NIFTI"
+        for cscan in source_cscans:
+            if not XnatUtils.has_resource(cscan, 'NIFTI'):
+                LOGGER.debug('Processor_Registration2Ref: cannot run, no NIFTI found for %s scan', cscan.info()['ID'])
+                return 0, "Missing NIFTI"
 
         return 1, None
 
@@ -112,18 +110,18 @@ class Processor_Reg_ADC_2_T2(SessionProcessor):
         sess_label = assessor.parent().label()
 
         csess = XnatUtils.CachedImageSession(assessor._intf, proj_label, subj_label, sess_label)
-        target_cscans = XnatUtils.get_good_cscans(csess, self.t2)
+        target_cscans = XnatUtils.get_good_cscans(csess, self.target)
         target_id = target_cscans[0].info()['ID']
-        source_cscan = XnatUtils.get_good_cscans(csess, self.adc)
-        source_id = source_cscan[0].info()['ID']
+        source_cscans = XnatUtils.get_good_cscans(csess, self.sources)
+        sources_id = [sc.info()['ID'] for sc in source_cscans]
 
         cmd = SPIDER_FORMAT.format(spider=self.spider_path,
                                    proj=proj_label,
                                    subj=subj_label,
                                    sess=sess_label,
                                    dir=jobdir,
-                                   t2=target_id,
-                                   adc=source_id,
+                                   target=target_id,
+                                   sources=','.join(sources_id),
                                    regaladin=self.reg_aladin_exe,
                                    args_reg_ala=self.args_reg_aladin,
                                    regf3d=self.reg_f3d_exe,
