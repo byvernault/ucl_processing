@@ -56,8 +56,8 @@ def parse_args():
         :return: argument parser object created by parse_args()
     '''
     ap = spiders.get_session_argparser("Reg_ADC_2_T2", "Register ADC scan to T2 scan")
-    ap.add_argument("--adc", dest="adc_id", help="ADC Scan ID from XNAT.", required=True)
-    ap.add_argument("--t2", dest="t2_id", help="T2 Scan ID from XNAT.", required=True)
+    ap.add_argument("--sources", dest="sources_id", help="Source Scans ID from XNAT.", required=True)
+    ap.add_argument("--target", dest="target_id", help="Target Scan ID from XNAT.", required=True)
     ap.add_argument("--regAladin", dest="reg_aladin_exe", help="path to reg_aladin's executable.", required=True)
     ap.add_argument("--argRegAladin", dest="args_reg_aladin", help="Argument for reg_aladin. Default: -maxit 15 -ln 4 -lp 4 -interp 1.", default=DEFAULT_ARGS_REG_ALADIN)
     ap.add_argument("--regf3d", dest="regf3d_exe", help="path to reg_f3d's executable.", required=True)
@@ -65,7 +65,7 @@ def parse_args():
     ap.add_argument("--openmp_core", dest="openmp_core", help="Number of core used by reg_aladin.", required=False, default=1)
     return ap.parse_args()
 
-class Spider_Reg_ADC_2_T2(SessionSpider):
+class Spider_Registration_Prostate(SessionSpider):
     '''
         Session Spider class to do: Register ADC scan to T2 scan
 
@@ -81,17 +81,16 @@ class Spider_Reg_ADC_2_T2(SessionSpider):
     '''
     def __init__(self, spider_path, jobdir, xnat_project, xnat_subject, xnat_session,
                  xnat_host=None, xnat_user=None, xnat_pass=None, suffix=""):
-        super(Spider_Reg_ADC_2_T2, self).__init__(spider_path, jobdir, xnat_project, xnat_subject, xnat_session,
-                                            xnat_host, xnat_user, xnat_pass, suffix)
+        super(Spider_Registration_Prostate, self).__init__(spider_path, jobdir, xnat_project,
+                                                           xnat_subject, xnat_session, xnat_host,
+                                                           xnat_user, xnat_pass, suffix)
         # Inputs
-        self.adc_nii = list()
-        self.t2_nii = list()
-        self.adc_dcm = list()
-        self.t2_dcm = list()
+        self.target = dict()
+        self.sources = dict()
 
         # Outputs
-        self.outputs = list()
-        self.pdf_final = os.path.join(self.jobdir, 'Registration_ADC_2_T2.pdf')
+        self.outputs = dict()
+        self.pdf_final = os.path.join(self.jobdir, 'Registration_prostate.pdf')
         # Check Executable:
         self.reg_aladin_exe = self.check_exe(ARGS.reg_aladin_exe, 'reg_aladin')
         self.reg_f3d_exe = self.check_exe(ARGS.regf3d_exe, 'reg_f3d')
@@ -112,28 +111,35 @@ class Spider_Reg_ADC_2_T2(SessionSpider):
 
             :param argument_parse: argument parser object return by parse_args()
         '''
-        resource = 'NIFTI' #resource to download from the scan on XNAT
-        input_folder = os.path.join(self.jobdir, 'inputs')
-        if not os.path.exists(input_folder):
-            os.makedirs(input_folder)
-        adc_folder = os.path.join(input_folder, 'ADC')
-        if not os.path.exists(adc_folder):
-            os.makedirs(adc_folder)
-        t2_folder = os.path.join(input_folder, 'T2')
-        if not os.path.exists(t2_folder):
-            os.makedirs(t2_folder)
-        adc_dcm = os.path.join(adc_folder, 'DICOM')
-        if not os.path.exists(adc_dcm):
-            os.makedirs(adc_dcm)
-        t2_dcm = os.path.join(t2_folder, 'DICOM')
-        if not os.path.exists(t2_dcm):
-            os.makedirs(t2_dcm)
+        # Make directory
+        input_folder =  XnatUtils.makedir(os.path.join(self.jobdir, 'inputs'), subdir=False)
 
-        self.adc_nii.extend(self.download(ARGS.adc_id, resource, adc_folder))
-        self.t2_nii.extend(self.download(ARGS.t2_id, resource, t2_folder))
-        self.adc_dcm.extend(self.download(ARGS.adc_id, 'DICOM', adc_dcm))
-        self.t2_dcm.extend(self.download(ARGS.t2_id, 'DICOM', t2_dcm))
+        # Target
+        target_folder = XnatUtils.makedir(os.path.join(input_folder, ARGS.target_id), subdir=False)
+        target_dcm = XnatUtils.makedir(os.path.join(target_folder, 'DICOM'), subdir=False)
+        self.time_writer('Connection to XNAT')
+        xnat = XnatUtils.get_interface(host=self.host, user=self.user,
+                                       pwd=self.pwd)
+        self.time_writer('Downloading target %s ...' % ARGS.target_id)
+        target_scan = XnatUtils.select_obj(xnat, ARGS.proj_label, ARGS.subj_label,
+                                          ARGS.sess_label, ARGS.target_id)
+        self.target['nii'] = XnatUtils.download_file_from_obj(target_folder, target_scan.resource('NIFTI'))
+        self.target['dcm'] = XnatUtils.download_files_from_obj(target_dcm, target_scan.resource('DICOM'))
 
+        # Sources
+        sources_list = XnatUtils.get_input_list(ARGS.sources_id, list())
+        self.time_writer('Downloading sources %s ...' % sources_list)
+        for ID in sources_list:
+            # Make directories
+            source_folder = XnatUtils.makedir(os.path.join(input_folder, ID), subdir=False)
+            source_dcm = XnatUtils.makedir(os.path.join(source_folder, 'DICOM'), subdir=False)
+            source_scan = XnatUtils.select_obj(xnat, ARGS.proj_label, ARGS.subj_label,
+                                              ARGS.sess_label, ID)
+            nii_list = XnatUtils.download_file_from_obj(source_folder, source_scan.resource('NIFTI'))
+            dcm_list = XnatUtils.download_file_from_obj(source_dcm, source_scan.resource('DICOM'))
+            self.sources[ID] = dict()
+            self.sources[ID]['nii'] = nii_list
+            self.sources[ID]['dcm'] = dcm_list
 
     @staticmethod
     def check_exe(executable, name):
@@ -145,7 +151,6 @@ class Spider_Reg_ADC_2_T2(SessionSpider):
             :return: Complete path to the executable
         """
         if executable == name:
-            print name
             return name
         else:
             executable = os.path.abspath(executable)
@@ -163,85 +168,90 @@ class Spider_Reg_ADC_2_T2(SessionSpider):
         '''
             Method running the process for the spider on the inputs data
         '''
-        output_folder = os.path.join(self.jobdir, 'outputs')
-        if not os.path.exists(output_folder):
-            os.makedirs(output_folder)
+        output_folder = XnatUtils.makedir(os.path.join(self.jobdir, 'outputs'), subdir=False)
 
         # REG ALADIN:
-        self.time_writer("reg_aladin with ref %s and flo %s" % (self.adc_nii[0], self.t2_nii[0]))
-        aladin_output = os.path.join(output_folder, "ADC_reg_2_t2_reg_aladin.nii")
-        affine_fpath = os.path.join(output_folder, "ADC_reg_2_t2_affine_transformation.txt")
+        for scan_id, res_dict in self.sources.items():
+            # Organise folders for ouput
+            reg_folder = XnatUtils.makedir(os.path.join(output_folder, scan_id), subdir=False)
+            ala_folder = XnatUtils.makedir(os.path.join(reg_folder, 'REG_ALA'), subdir=False)
+            aff_folder = XnatUtils.makedir(os.path.join(reg_folder, 'AFF'), subdir=False)
+            f3d_folder = XnatUtils.makedir(os.path.join(reg_folder, 'REG_F3D'), subdir=False)
+            cpp_folder = XnatUtils.makedir(os.path.join(reg_folder, 'CPP'), subdir=False)
+            self.time_writer("reg_aladin with ref %s and flo %s" % (self.target['nii'], res_dict['nii']))
+            aladin_output = os.path.join(ala_folder, "%s_2_%s_reg_aladin.nii" % (scan_id, ARGS.target_id))
+            affine_fpath = os.path.join(aff_folder, "%s_2_%s_affine_transformation.txt" % (scan_id, ARGS.target_id))
 
-        cmd = REG_ALADIN_CMD.format(exe_path=self.reg_aladin_exe,
-                                    ref=self.t2_nii[0],
-                                    flo=self.adc_nii[0],
-                                    res=aladin_output,
-                                    aff=affine_fpath,
-                                    args=ARGS.args_reg_aladin)
-        self.run_system_cmd(cmd)
-        # Check that the affine file exists:
-        if not os.path.exists(affine_fpath):
-            raise Exception('Reg_aladin failed. File %s not found.' % affine_fpath)
+            cmd = REG_ALADIN_CMD.format(exe_path=self.reg_aladin_exe,
+                                        ref=self.target['nii'],
+                                        flo=res_dict['nii'],
+                                        res=aladin_output,
+                                        aff=affine_fpath,
+                                        args=ARGS.args_reg_aladin)
+            self.run_system_cmd(cmd)
+            # Check that the affine file exists:
+            if not os.path.exists(affine_fpath):
+                raise Exception('Reg_aladin failed. File %s not found.' % affine_fpath)
 
-        #REG_F3D
-        self.time_writer("reg_f3d with ref %s and flo %s and aff %s" % (self.adc_nii[0], self.t2_nii[0], affine_fpath))
-        f3d_output = os.path.join(output_folder, "ADC_reg_2_t2_reg_f3d.nii")
-        f3d_cpp = os.path.join(output_folder, "ADC_reg_2_t2_reg_f3d_cpp.nii")
-        cmd = REG_F3D_CMD.format(exe_path=self.reg_f3d_exe,
-                                 ref=self.t2_nii[0],
-                                 flo=self.adc_nii[0],
-                                 res=f3d_output,
-                                 cpp=f3d_cpp,
-                                 aff=affine_fpath,
-                                 args=ARGS.args_regf3d)
-        self.run_system_cmd(cmd)
-        XnatUtils.gzip_nii(output_folder)
-        self.outputs.extend([{'label':'reg_aladin_results', 'image':aladin_output+'.gz'},
-                             {'label':'reg_f3d_results', 'image':f3d_output+'.gz'}])
+            #REG_F3D
+            self.time_writer("reg_f3d with ref %s and flo %s and aff %s" % (self.target['nii'], res_dict['nii'], affine_fpath))
+            f3d_output = os.path.join(f3d_folder, "%s_2_%s_reg_f3d.nii" % (scan_id, ARGS.target_id))
+            f3d_cpp = os.path.join(cpp_folder, "%s_2_%s_reg_f3d_cpp.nii" % (scan_id, ARGS.target_id))
+            cmd = REG_F3D_CMD.format(exe_path=self.reg_f3d_exe,
+                                     ref=self.target['nii'],
+                                     flo=res_dict['nii'],
+                                     res=f3d_output,
+                                     cpp=f3d_cpp,
+                                     aff=affine_fpath,
+                                     args=ARGS.args_regf3d)
+            self.run_system_cmd(cmd)
+            XnatUtils.gzip_nii(ala_folder)
+            XnatUtils.gzip_nii(f3d_folder)
+            XnatUtils.gzip_nii(cpp_folder)
+            self.outputs[scan_id] = [{'label':'reg_aladin_results', 'image':aladin_output+'.gz'},
+                                     {'label':'reg_f3d_results', 'image':f3d_output+'.gz'}]
+
+            # Generate DICOM version of the reg_f3d results:
+            convert_nifti_2_dicoms(f3d_output+'.gz', self.target['dcm'], self.sources[scan_id]['dcm'],
+                                   os.path.join(output_folder, 'OSIRIX'), label=("%s_reg_f3d" % scan_id))
+
         # Make PDF
         self.make_pdf()
-        # Generate DICOM version of the reg_f3d results:
-        convert_nifti_2_dicoms(os.path.join(self.jobdir, 'outputs', "ADC_reg_2_t2_reg_f3d.nii.gz"),
-                               self.t2_dcm, self.adc_dcm[0],
-                               os.path.join(output_folder, 'reg_f3d_dicoms'), label="ADC_reg_f3d")
 
     def finish(self):
         '''
             Method to copy the results in the Spider Results folder dax.RESULTS_DIR
         '''
-        results_dict = {'PDF': self.pdf_final,
-                        'REG_ALA': os.path.join(self.jobdir, 'outputs', "ADC_reg_2_t2_reg_aladin.nii.gz"),
-                        'AFF': os.path.join(self.jobdir, 'outputs', "ADC_reg_2_t2_affine_transformation.txt"),
-                        'REG_F3D': os.path.join(self.jobdir, 'outputs', "ADC_reg_2_t2_reg_f3d.nii.gz"),
-                        'OSIRIX' : os.path.join(self.jobdir, 'outputs', 'reg_f3d_dicoms'),
-                        'CPP': os.path.join(self.jobdir, 'outputs', "ADC_reg_2_t2_reg_f3d_cpp.nii.gz")}
+        results_dict = {'PDF': self.pdf_final, 'OSIRIX': list()}
+        for scan_id in self.sources.keys():
+            results_dict[scan_id] = os.path.join(self.jobdir, 'outputs', scan_id)
+            results_dict["OSIRIX"].append(os.path.join(self.jobdir, 'outputs', scan_id, 'reg_f3d_dicoms'))
         self.upload_dict(results_dict)
         self.end()
 
-    def plot_images(self, fig, data, number_images, subplot_index, label):
+    def plot_images(self, fig, data, subplot_index, label):
         '''
             Method to plot the images on the PDF for the first page
 
             :param fig: figure from matplotlib
             :param data: numpy array of the images (3D) to display
-            :param number_images: number of images for the subplot (6)
-            :param subplot_index: index of the line to display (1-6)
+            :param subplot_index: index of the line to display (4)
             :param label: y-label
             :return: None
         '''
-        ax = fig.add_subplot(number_images, 3, 3*subplot_index+1)
+        ax = fig.add_subplot(4, 3, 3*subplot_index+1)
         ax.imshow(np.rot90(data[:, :, data.shape[2]/2]), cmap = 'gray')
         if subplot_index == 0:
             ax.set_title('Axial', fontsize=7)
         ax.set_ylabel(label, fontsize=9)
         ax.set_xticks([])
         ax.set_yticks([])
-        ax = fig.add_subplot(number_images, 3, 3*subplot_index+2)
+        ax = fig.add_subplot(4, 3, 3*subplot_index+2)
         ax.imshow(np.rot90(data[:, data.shape[1]/2, :]), cmap = 'gray')
         if subplot_index == 0:
             ax.set_title('Coronal', fontsize=7)
         ax.set_axis_off()
-        ax = fig.add_subplot(number_images, 3, 3*subplot_index+3)
+        ax = fig.add_subplot(4, 3, 3*subplot_index+3)
         ax.imshow(np.rot90(data[data.shape[0]/2, :, :]), cmap = 'gray')
         if subplot_index == 0:
             ax.set_title('Sagittal', fontsize=7)
@@ -279,71 +289,56 @@ class Spider_Reg_ADC_2_T2(SessionSpider):
         ## Define output files
         # Variables:
         date = datetime.datetime.now()
-        nb_images_per_page = 5
+        page_count = 1
 
         # PDF path:
         pdf_pages_list = list()
+        total_nb_pages = len(self.sources)
+        ref_data = open_nifti(self.target['nii'])
+        for scan_id, res_dict in self.sources.items():
+            fig = plt.figure(page_count, figsize=(7.5, 10))
+            self.plot_images(fig, ref_data, 0, 'Target - %s' % ARGS.target_id)
+            source_data = open_nifti(res_dict['nii'])
+            self.plot_images(fig, source_data, 1, 'Source - %s' % scan_id)
 
-        pdf_page_number = 0 # 5 images per pages
-        fig = plt.figure(0, figsize=(7.5, 10))
-        total_nb_pages = (len(self.outputs) + 2)/nb_images_per_page
-        if total_nb_pages == 0:
-            total_nb_pages = 1
-        # Plot the Inputs
-        # Open niftis with nibabel
-        f_img = nib.load(self.t2_nii[0])
-        f_img_data = f_img.get_data()
-        # Draw
-        if len(f_img_data.shape) == 3:
-            data = f_img_data
-        elif len(f_img_data.shape) == 4:
-            data = f_img_data[:, :, :, f_img_data.shape[3]/2]
-        self.plot_images(fig, data, nb_images_per_page, 0, 'T2 scan')
-        # Open niftis with nibabel
-        f_img = nib.load(self.adc_nii[0])
-        f_img_data = f_img.get_data()
-        # Draw
-        if len(f_img_data.shape) == 3:
-            data = f_img_data
-        elif len(f_img_data.shape) == 4:
-            data = f_img_data[:, :, :, f_img_data.shape[3]/2]
-        self.plot_images(fig, data, nb_images_per_page, 1, 'ADC scan')
+            for index, out_dict in enumerate(self.outputs[scan_id]):
+                if not os.path.exists(out_dict['image']):
+                    raise Exception('%s output image not found.' % (out_dict['image']))
 
-        page_0_saved = False
-        for index, out_dict in enumerate(self.outputs):
-            if not os.path.exists(out_dict['image']):
-                raise Exception('%s output image not found.' % (out_dict['image']))
+                # Open niftis with nibabel
+                out_data = open_nifti(out_dict['image'])
+                self.plot_images(fig, out_data, index+2, out_dict['label'])
 
-            if (index+2)/5 != pdf_page_number:
-                page_0_saved = True
-                pdf_name = 'Reg_ADC_2_T2_page%s.pdf' % (pdf_page_number)
-                pdf_page = os.path.join(self.jobdir, pdf_name)
-                # Save figure to PDF page
-                self.save_pdf_page(fig, pdf_page, date, pdf_page_number, total_nb_pages)
-                pdf_pages_list.append(pdf_page)
-                pdf_page_number += 1
-                fig = plt.figure(pdf_page_number, figsize=(7.5, 10))
+            # Save figure to PDF page
+            pdf_name = 'Reg_%s_2_%s_page_%s.pdf' % (ARGS.target_id, scan_id, page_count)
+            pdf_page = os.path.join(self.jobdir, pdf_name)
+            self.save_pdf_page(fig, pdf_page, date, page_count, total_nb_pages)
+            pdf_pages_list.append(pdf_page)
+            page_count += 1
 
-            # Open niftis with nibabel
-            f_img = nib.load(out_dict['image'])
-            f_img_data = f_img.get_data()
-            # Draw
-            if len(f_img_data.shape) == 3:
-                data = f_img_data
-            elif len(f_img_data.shape) == 4:
-                data = f_img_data[:, :, :, f_img_data.shape[3]/2]
-            self.plot_images(fig, data, nb_images_per_page, index+2, out_dict['label'])
+        ## Join the two pages for the PDF:
+        cmd = 'gs -q -sPAPERSIZE=letter -dNOPAUSE -dBATCH -sDEVICE=pdfwrite -sOutputFile=%s' % (self.pdf_final)
+        for page in pdf_pages_list:
+            cmd = '%s %s' % (cmd, page)
+        self.time_writer('INFO:saving final PDF: %s ' % cmd)
+        os.system(cmd)
 
-        # If only 5 or less images, save PDF zero
-        if not page_0_saved:
-            self.save_pdf_page(fig, self.pdf_final, date, 1, total_nb_pages)
-        else:
-            ## Join the two pages for the PDF:
-            cmd = 'gs -q -sPAPERSIZE=letter -dNOPAUSE -dBATCH -sDEVICE=pdfwrite -sOutputFile=%s' % (self.pdf_final)
-            for page in pdf_pages_list:
-                cmd = '%s %s' % (cmd, page)
-            self.time_writer('INFO:saving final PDF: %s ' % cmd)
-            os.system(cmd)
+def open_nifti(nifti_path):
+    """
+        Open the nifti from the path given to display for the PDF
+
+        :param nifti_path: path for the nifti
+        :return: numpy array of data (3D matrix)
+    """
+    # Open niftis with nibabel
+    f_img = nib.load(nifti_path)
+    f_img_data = f_img.get_data()
+    # Draw
+    if len(f_img_data.shape) == 3:
+        data = f_img_data
+    elif len(f_img_data.shape) == 4:
+        data = f_img_data[:, :, :, f_img_data.shape[3]/2]
+    return data
 
 def write_dicom(pixel_array, filename, ds_copy, ds_ori, volume_number,
                 series_number, sop_id):
@@ -454,15 +449,15 @@ def convert_nifti_2_dicoms(nifti_path, dicom_targets, dicom_source, output_folde
 if __name__ == '__main__':
     ARGS = parse_args()
     # generate spider object:
-    spider_obj = Spider_Reg_ADC_2_T2(spider_path=sys.argv[0],
-                                     jobdir=ARGS.temp_dir,
-                                     xnat_project=ARGS.proj_label,
-                                     xnat_subject=ARGS.subj_label,
-                                     xnat_session=ARGS.sess_label,
-                                     xnat_host=ARGS.host,
-                                     xnat_user=ARGS.user,
-                                     xnat_pass=None,
-                                     suffix=ARGS.suffix)
+    spider_obj = Spider_Registration_Prostate(spider_path=sys.argv[0],
+                                              jobdir=ARGS.temp_dir,
+                                              xnat_project=ARGS.proj_label,
+                                              xnat_subject=ARGS.subj_label,
+                                              xnat_session=ARGS.sess_label,
+                                              xnat_host=ARGS.host,
+                                              xnat_user=ARGS.user,
+                                              xnat_pass=None,
+                                              suffix=ARGS.suffix)
 
     # print some information before starting
     spider_obj.print_init(ARGS, "Benjamin Yvernault", "b.yvernault@ucl.ac.uk")
@@ -474,4 +469,4 @@ if __name__ == '__main__':
     spider_obj.run()
 
     # Finish method to copy results
-    spider_obj.finish()
+    #spider_obj.finish()
