@@ -9,7 +9,7 @@
 
 __author__ = "Benjamin Yvernault"
 __email__ = "b.yvernault@ucl.ac.uk"
-__purpose__ = "Register ADC scan to T2 scan"
+__purpose__ = "Register Prostate Scans (DWI-ADC and DCE to T2)"
 __spider_name__ = "Reg_ADC_2_T2"
 __version__ = "1.0.0"
 __modifications__ = "2016-03-15 13:33:03.911277 - Original write"
@@ -31,7 +31,17 @@ REG_ALADIN_CMD = "{exe_path} -ref {ref} -flo {flo} -res {res} -aff {aff} {args}"
 REG_F3D_CMD = "{exe_path} -ref {ref} -flo {flo} -aff {aff} -cpp {cpp} -res {res} {args}"
 DEFAULT_ARGS_REG_ALADIN = " -maxit 15 -ln 4 -lp 4 -interp 1"
 DEFAULT_ARGS_REG_F3D = " -ln 4 -lp 4 -jl 0.1 -be 0.05 -maxit 250 -lncc 0 5.0 -sx 2.5"
-#DEFAULT_ARGS_REG_F3D = " -ln 4 -lp 4 -jl 0.4 -be 0.05 -maxit 250 -lncc 0 5.0 -sx 2.5"
+# DICOMs TAG to copy
+TAGS_TO_COPY = [0x00185100, #Patient Position
+                0x00180050, # Slice Thicknes
+                0x00180088, # Spacing Between Slices
+                0x00181312, # In-plane Phase Encoding
+                0x00200032, # Image Position
+                0x00200037, # Image Orientation
+                0x00201041, # Slice Location
+                0x00280010, # rows
+                0x00280011, # columns
+                0x00280030] # Pixel spacing
 
 def parse_args():
     '''
@@ -125,21 +135,25 @@ class Spider_Registration_Prostate(SessionSpider):
                                           ARGS.sess_label, ARGS.target_id)
         self.target['nii'] = XnatUtils.download_file_from_obj(target_folder, target_scan.resource('NIFTI'))
         self.target['dcm'] = XnatUtils.download_files_from_obj(target_dcm, target_scan.resource('DICOM'))
+        self.target['type'] = target_scan.attrs.get('type')
+        self.target['ID'] = ARGS.target_id
 
         # Sources
         sources_list = XnatUtils.get_input_list(ARGS.sources_id, list())
         self.time_writer('Downloading sources %s ...' % sources_list)
-        for ID in sources_list:
+        for scan_id in sources_list:
             # Make directories
-            source_folder = XnatUtils.makedir(os.path.join(input_folder, ID), subdir=False)
+            source_folder = XnatUtils.makedir(os.path.join(input_folder, scan_id), subdir=False)
             source_dcm = XnatUtils.makedir(os.path.join(source_folder, 'DICOM'), subdir=False)
             source_scan = XnatUtils.select_obj(xnat, ARGS.proj_label, ARGS.subj_label,
-                                              ARGS.sess_label, ID)
+                                              ARGS.sess_label, scan_id)
             nii_list = XnatUtils.download_file_from_obj(source_folder, source_scan.resource('NIFTI'))
             dcm_list = XnatUtils.download_file_from_obj(source_dcm, source_scan.resource('DICOM'))
-            self.sources[ID] = dict()
-            self.sources[ID]['nii'] = nii_list
-            self.sources[ID]['dcm'] = dcm_list
+            self.sources[scan_id] = dict()
+            self.sources[scan_id]['nii'] = nii_list
+            self.sources[scan_id]['dcm'] = dcm_list
+            self.sources[scan_id]['type'] = source_scan.attrs.get('type')
+            self.sources[scan_id]['ID'] = scan_id
 
     @staticmethod
     def check_exe(executable, name):
@@ -169,6 +183,17 @@ class Spider_Registration_Prostate(SessionSpider):
             Method running the process for the spider on the inputs data
         '''
         output_folder = XnatUtils.makedir(os.path.join(self.jobdir, 'outputs'), subdir=False)
+
+        # Sort the DICOM T2 to convert the registered modalities NIFTI to DICOM
+        dcm_obj_sorted = dict()
+        for dcm_file in self.target['dcm']:
+            # Load dicom headers
+            if not os.path.isfile(dcm_file):
+                raise Exception("DICOM File %s not found after download." % dcm_file)
+            t2_dcm_obj = dicom.read_file(dcm_file)
+            t2_dcm_obj = dicom.read_file(dcm_file)
+            dcm_obj_sorted[t2_dcm_obj[0x00200032].value[2]] = t2_dcm_obj
+        dcm_obj_sorted_list = [dcm_obj_sorted[key] for key in sorted(dcm_obj_sorted)]
 
         # REG ALADIN:
         for scan_id, res_dict in self.sources.items():
@@ -212,7 +237,7 @@ class Spider_Registration_Prostate(SessionSpider):
                                      {'label':'reg_f3d_results', 'image':f3d_output+'.gz'}]
 
             # Generate DICOM version of the reg_f3d results:
-            convert_nifti_2_dicoms(f3d_output+'.gz', self.target['dcm'], self.sources[scan_id]['dcm'],
+            convert_nifti_2_dicoms(f3d_output+'.gz', dcm_obj_sorted_list, self.sources[scan_id]['dcm'],
                                    os.path.join(output_folder, 'OSIRIX'), label=("%s_reg_f3d" % scan_id))
 
         # Make PDF
@@ -222,10 +247,9 @@ class Spider_Registration_Prostate(SessionSpider):
         '''
             Method to copy the results in the Spider Results folder dax.RESULTS_DIR
         '''
-        results_dict = {'PDF': self.pdf_final, 'OSIRIX': list()}
+        results_dict = {'PDF': self.pdf_final, 'OSIRIX': os.path.join(self.jobdir, 'outputs', 'OSIRIX')}
         for scan_id in self.sources.keys():
             results_dict[scan_id] = os.path.join(self.jobdir, 'outputs', scan_id)
-            results_dict["OSIRIX"].append(os.path.join(self.jobdir, 'outputs', scan_id, 'reg_f3d_dicoms'))
         self.upload_dict(results_dict)
         self.end()
 
@@ -271,7 +295,7 @@ class Spider_Registration_Prostate(SessionSpider):
         """
         # Set footer and title
         fig.tight_layout()
-        plt.figtext(0.5, 0.985, '-- Registration2Ref Pipeline PDF report --',
+        plt.figtext(0.5, 0.985, '-- Registration Prostate Pipeline PDF report --',
                     horizontalalignment='center', fontsize=10)
         footer = 'Date: %s -- page %s/%s -- PDF generated by TIG laboratory at UCL, London' % (str(date), str(pdf_page_number), str(pdf_pages))
         plt.figtext(0.5, 0.02, footer, horizontalalignment='center', fontsize=8)
@@ -297,9 +321,9 @@ class Spider_Registration_Prostate(SessionSpider):
         ref_data = open_nifti(self.target['nii'])
         for scan_id, res_dict in self.sources.items():
             fig = plt.figure(page_count, figsize=(7.5, 10))
-            self.plot_images(fig, ref_data, 0, 'Target - %s' % ARGS.target_id)
+            self.plot_images(fig, ref_data, 0, 'Target - %s - %s' % (self.target['ID'], self.target['type']))
             source_data = open_nifti(res_dict['nii'])
-            self.plot_images(fig, source_data, 1, 'Source - %s' % scan_id)
+            self.plot_images(fig, source_data, 1, 'Source - %s - %s' % (self.sources[scan_id]['ID'], self.sources[scan_id]['type']))
 
             for index, out_dict in enumerate(self.outputs[scan_id]):
                 if not os.path.exists(out_dict['image']):
@@ -371,18 +395,9 @@ def write_dicom(pixel_array, filename, ds_copy, ds_ori, volume_number,
     ds.InstanceNumber = volume_number+1
 
     # Copy from T2 the orientation tags:
-    ds.PatientPosition = ds_copy.PatientPosition
-    ds[0x18,0x50] = ds_copy[0x18,0x50] # Slice Thicknes
-    ds[0x18,0x88] = ds_copy[0x18,0x88] # Spacing Between Slices
-    ds[0x18,0x1312] = ds_copy[0x18,0x1312] # In-plane Phase Encoding
-    ds[0x20,0x32] = ds_copy[0x20,0x32] # Image Position
-    ds[0x20,0x37] = ds_copy[0x20,0x37] # Image Orientation
-    ds[0x20,0x1041] = ds_copy[0x20,0x1041] # Slice Location
-    ds[0x28,0x10] = ds_copy[0x28,0x10] # rows
-    ds[0x28,0x11] = ds_copy[0x28,0x11] # columns
-    ds[0x28,0x30] = ds_copy[0x28,0x30] # Pixel spacing
-    #ds[0x28,0x1050] = ds_copy[0x28,0x1050] # Window Center
-    #ds[0x28,0x1051] = ds_copy[0x28,0x1051] # Window Width
+    for tag in TAGS_TO_COPY:
+        if tag in ds_copy:
+            ds[tag] = ds_copy[tag]
 
     # Set the Image pixel array
     if pixel_array.dtype != np.uint16:
@@ -392,15 +407,13 @@ def write_dicom(pixel_array, filename, ds_copy, ds_ori, volume_number,
     # Save the image
     ds.save_as(filename)
 
-def convert_nifti_2_dicoms(nifti_path, dicom_targets, dicom_source, output_folder, label=None):
+def convert_nifti_2_dicoms(nifti_path, dcm_targets, dicom_source, output_folder, label=None):
     """
     Convert 4D niftis generated by reg_f3d into DICOM files.
 
     :param nifti_path: path to the nifti file
-    :param dicom_target: list of dicom files from the target
-     for the registration for header info
-    :param dicom_source: one dicom file from the source
-     for the registration for header info
+    :param dcm_targets: list of pydicom object from the target image for header info
+    :param dicom_source: one dicom file from the source for header info
     :param output_folder: folder where the DICOM files will be saved
     :param label: name for the output dicom files
     :return: None
@@ -426,15 +439,6 @@ def convert_nifti_2_dicoms(nifti_path, dicom_targets, dicom_source, output_folde
     sop_id = adc_dcm_obj.SOPInstanceUID.split('.')
     sop_id = '.'.join(sop_id[:-1])+'.'
 
-    # Sort the DICOM T2 to create the ADC registered DICOMs
-    dcm_obj_sorted = dict()
-    for dcm_file in dicom_targets:
-        # Load dicom headers
-        if not os.path.isfile(dcm_file):
-            raise Exception("DICOM File %s not found after reg_f3d." % dcm_file)
-        t2_dcm_obj = dicom.read_file(dcm_file)
-        dcm_obj_sorted[t2_dcm_obj.InstanceNumber] = t2_dcm_obj
-
     for volume_index in range(f_img_data.shape[2]):
         if f_img_data.shape[2] > 100:
             filename = os.path.join(output_folder, '%s_%03d.dcm' % (label, volume_index+1))
@@ -443,7 +447,7 @@ def convert_nifti_2_dicoms(nifti_path, dicom_targets, dicom_source, output_folde
         else:
             filename = os.path.join(output_folder, '%s_%d.dcm' % (label, volume_index+1))
         write_dicom(np.rot90(f_img_data[:, :, volume_index]), filename,
-                    dcm_obj_sorted[volume_index+1], adc_dcm_obj, volume_index,
+                    dcm_targets[volume_index], adc_dcm_obj, volume_index,
                     series_number, sop_id)
 
 if __name__ == '__main__':
@@ -469,4 +473,4 @@ if __name__ == '__main__':
     spider_obj.run()
 
     # Finish method to copy results
-    #spider_obj.finish()
+    spider_obj.finish()
