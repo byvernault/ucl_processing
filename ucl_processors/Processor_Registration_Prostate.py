@@ -23,7 +23,7 @@ LOGGER = logging.getLogger('dax')
 # Default values for arguments:
 # EDIT PARAMETERS FOR YOUR SPIDER CASE (SPIDER_PATH, WALLTIME, etc...)
 HOME = os.path.expanduser("~")
-DEFAULT_SPIDER_PATH = os.path.join(HOME, 'Xnat-management/ucl_processing/ucl_spiders/Spider_Reg_ADC_2_T2_v1_0_0.py')
+DEFAULT_SPIDER_PATH = os.path.join(HOME, 'Xnat-management/ucl_processing/ucl_spiders/Spider_Registration_Prostate_v1_0_0.py')
 DEFAULT_WALLTIME = '02:00:00'
 DEFAULT_MEM = 2048
 DEFAULT_PPN = 1
@@ -88,8 +88,8 @@ class Processor_Reg_ADC_2_T2(SessionProcessor):
 
         source_cscans = XnatUtils.get_good_cscans(csess, self.adc)
         if not source_cscans:
-            LOGGER.debug('Processor_Registration2Ref: cannot run at all, no ADC image found')
-            return -1, 'ADC not found'
+            LOGGER.debug('Processor_Registration2Ref: cannot run at all, no ADC/DCE image found')
+            return -1, 'ADC/DCE not found'
         for cscan in source_cscans:
             if not XnatUtils.has_resource(cscan, 'NIFTI'):
                 LOGGER.debug('Processor_Registration2Ref: cannot run, no NIFTI found for %s scan', cscan.info()['ID'])
