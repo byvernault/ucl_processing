@@ -35,7 +35,7 @@ DEFAULT_ARGS_REG_ALADIN = " -maxit 15 -ln 4 -lp 4 -interp 1"
 DEFAULT_ARGS_REG_F3D = " -ln 4 -lp 4 -jl 0.1 -be 0.05 -maxit 250 -lncc 0 5.0 -sx 2.5"
 
 # Format for the spider command line
-SPIDER_FORMAT = '''python {spider} -p {proj} -s {subj} -e {sess} -d {dir} --suffix "{suffix_proc}" --sources {sources} --target {target} --regAladin {regaladin} --argsRegAladin "{args_reg_ala}" --regf3d {regf3d} --argRegf3d "{args_reg_f3d}" --openmp_core {number_cores}'''
+SPIDER_FORMAT = '''python {spider} -p {proj} -s {subj} -e {sess} -d {dir} --suffix "{suffix_proc}" --sources {sources} --target {target} --regAladin {regaladin} --argsRegAladin "{args_reg_ala}" --regf3d {regf3d} --argsRegf3d "{args_reg_f3d}" --openmp_core {number_cores}'''
 
 class Processor_Registration_Prostate(SessionProcessor):
     '''
