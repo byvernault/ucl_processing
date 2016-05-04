@@ -75,7 +75,7 @@ class Processor_Registration_Prostate(SessionProcessor):
         :return: status, qcstatus
         '''
         # Check that there is only one scan usable with the reference type and that the reference file as a NIFTI
-        target_cscans = XnatUtils.get_good_cscans(csess, self.t2)
+        target_cscans = XnatUtils.get_good_cscans(csess, self.target)
         if not target_cscans:
             LOGGER.debug('Processor_Registration2Ref: cannot run at all, no T2 image found')
             return -1, 'T2 not found'
@@ -86,7 +86,7 @@ class Processor_Registration_Prostate(SessionProcessor):
             LOGGER.debug('Processor_Registration2Ref: cannot run, no NIFTI for T2 image')
             return 0, "no T2's NIFTI"
 
-        source_cscans = XnatUtils.get_good_cscans(csess, self.adc)
+        source_cscans = XnatUtils.get_good_cscans(csess, self.sources)
         if not source_cscans:
             LOGGER.debug('Processor_Registration2Ref: cannot run at all, no ADC/DCE image found')
             return -1, 'ADC/DCE not found'
