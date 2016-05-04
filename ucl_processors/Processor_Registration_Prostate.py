@@ -3,12 +3,12 @@
     contact:        b.yvernault@ucl.ac.uk
     Processor name: Processor_Reg_ADC_2_T2
     Creation date:  2016-03-16 10:17:34.887155
-    Purpose:        Processor for registering ADC scan to T2
+    Purpose:        Processor for registering ADC/DEC scan to T2
 '''
 
 __author__ = "Benjamin Yvernault"
 __email__ = "b.yvernault@ucl.ac.uk"
-__purpose__ = "Processor for registering ADC scan to T2"
+__purpose__ = "Processor for registering ADC/DEC scan to T2 for prostate"
 __processor_name__ = "Processor_Reg_ADC_2_T2"
 __modifications__ = "2016-03-16 10:17:34.887155 - Original write"
 
@@ -37,9 +37,9 @@ DEFAULT_ARGS_REG_F3D = " -ln 4 -lp 4 -jl 0.1 -be 0.05 -maxit 250 -lncc 0 5.0 -sx
 # Format for the spider command line
 SPIDER_FORMAT = '''python {spider} -p {proj} -s {subj} -e {sess} -d {dir} --suffix "{suffix_proc}" --sources {sources} --target {target} --regAladin {regaladin} --argsRegAladin "{args_reg_ala}" --regf3d {regf3d} --argRegf3d "{args_reg_f3d}" --openmp_core {number_cores}'''
 
-class Processor_Reg_ADC_2_T2(SessionProcessor):
+class Processor_Registration_Prostate(SessionProcessor):
     '''
-    Processor class for Reg_ADC_2_T2 that runs on a session
+    Processor class for Registration_Prostate that runs on a session
 
     :param spider_path: spider path on the system
     :param version: version of the spider
@@ -54,8 +54,8 @@ class Processor_Reg_ADC_2_T2(SessionProcessor):
                  reg_f3d_exe=DEFAULT_REG_F3D, args_reg_f3d=DEFAULT_ARGS_REG_F3D,
                  walltime=DEFAULT_WALLTIME, mem_mb=DEFAULT_MEM, ppn=DEFAULT_PPN,
                  suffix_proc=''):
-        super(Processor_Reg_ADC_2_T2, self).__init__(walltime, mem_mb, spider_path, version,
-                                                     ppn=ppn, suffix_proc=suffix_proc)
+        super(Processor_Registration_Prostate, self).__init__(walltime, mem_mb, spider_path, version,
+                                                              ppn=ppn, suffix_proc=suffix_proc)
         self.target = XnatUtils.get_input_list(target, DEFAULT_TARGET)
         self.sources = XnatUtils.get_input_list(sources, DEFAULT_SOURCES)
         self.reg_aladin_exe = reg_aladin_exe
