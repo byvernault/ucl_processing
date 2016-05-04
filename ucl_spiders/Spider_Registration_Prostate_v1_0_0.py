@@ -65,13 +65,13 @@ def parse_args():
 
         :return: argument parser object created by parse_args()
     '''
-    ap = spiders.get_session_argparser("Reg_ADC_2_T2", "Register ADC scan to T2 scan")
+    ap = spiders.get_session_argparser("Spider_Registration_Prostate", "Register ADC/DCE scans to T2 scan")
     ap.add_argument("--sources", dest="sources_id", help="Source Scans ID from XNAT.", required=True)
     ap.add_argument("--target", dest="target_id", help="Target Scan ID from XNAT.", required=True)
     ap.add_argument("--regAladin", dest="reg_aladin_exe", help="path to reg_aladin's executable.", required=True)
-    ap.add_argument("--argRegAladin", dest="args_reg_aladin", help="Argument for reg_aladin. Default: -maxit 15 -ln 4 -lp 4 -interp 1.", default=DEFAULT_ARGS_REG_ALADIN)
+    ap.add_argument("--argsRegAladin", dest="args_reg_aladin", help="Argument for reg_aladin. Default: -maxit 15 -ln 4 -lp 4 -interp 1.", default=DEFAULT_ARGS_REG_ALADIN)
     ap.add_argument("--regf3d", dest="regf3d_exe", help="path to reg_f3d's executable.", required=True)
-    ap.add_argument("--argRegf3d", dest="args_regf3d", help="Argument for reg_f3d. Default: -maxit 15 -ln 4 -lp 4 -interp 1.", default=DEFAULT_ARGS_REG_F3D)
+    ap.add_argument("--argsRegf3d", dest="args_regf3d", help="Argument for reg_f3d. Default: -maxit 15 -ln 4 -lp 4 -interp 1.", default=DEFAULT_ARGS_REG_F3D)
     ap.add_argument("--openmp_core", dest="openmp_core", help="Number of core used by reg_aladin.", required=False, default=1)
     return ap.parse_args()
 
