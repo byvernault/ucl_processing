@@ -24,9 +24,9 @@ LOGGER = logging.getLogger('dax')
 # EDIT PARAMETERS FOR YOUR SPIDER CASE (SPIDER_PATH, WALLTIME, etc...)
 HOME = os.path.expanduser("~")
 DEFAULT_SPIDER_PATH = os.path.join(HOME, 'Xnat-management/ucl_processing/ucl_spiders/Spider_Registration_Prostate_v1_0_0.py')
-DEFAULT_WALLTIME = '02:00:00'
+DEFAULT_WALLTIME = '05:00:00'
 DEFAULT_MEM = 2048
-DEFAULT_PPN = 1
+DEFAULT_PPN = 4
 DEFAULT_TARGET = ['T2 Axial']
 DEFAULT_SOURCES = ['ADC', 'DCE']
 DEFAULT_REG_ALADIN = '/share/apps/cmic/niftypipe_deps/bin/reg_aladin'
