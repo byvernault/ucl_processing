@@ -18,7 +18,9 @@ __email__ = "b.yvernault@ucl.ac.uk"
 __purpose__ = "Extract the vessel from the T1/MPRAGE scan"
 __spider_name__ = "Vessel_Extraction"
 __version__ = "1.0.0"
-__modifications__ = "2016-02-22 14:19:24.698923 - Original write"
+__modifications__ = """2016-02-22 14:19:24.698923 - Original write
+2016-05-10 18:04:01 - Update to new format respecting pep8
+"""
 
 DEFAULT_PIXEL_SIZE = '0.775438'
 VESSEL_CMD = """{exe_path} -i {input} -o {output} --mod 0 --aone 0.5 --atwo 2\
@@ -42,8 +44,7 @@ def parse_args():
 
     :return: argument parser object created by parse_args()
     """
-    desc = "Extract the vessel from the T1/MPRAGE scan"
-    ap = spiders.get_scan_argparser("Vessel_Extraction", desc)
+    ap = spiders.get_scan_argparser("Vessel_Extraction", __purpose__)
     ap.add_argument("--vesselExtPath", dest="vessel_extractor",  required=True,
                     help="path to the executable niftkVesselExtractor.")
     return ap.parse_args()
@@ -156,7 +157,7 @@ Value not set on XNAT."
         """
         results_dict = {
                         # 'PDF': pdfpath,
-                        'OUTPUT': self.output
+                        # 'OUTPUT': self.output
                         }
         self.upload_dict(results_dict)
         self.end()
