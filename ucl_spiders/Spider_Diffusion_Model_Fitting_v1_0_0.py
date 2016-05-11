@@ -1,7 +1,7 @@
 """Spider to perform Diffusion Model Fitting.
 
 Author:         Benjamin Yvernault
-contact:        byvernault@gmail.com
+contact:        b.yvernault@ucl.ac.uk
 Spider name:    Diffusion_Model_Fitting
 Spider version: 1.0.0
 Creation date:  2016-05-10 13:36:26.321786
@@ -27,8 +27,6 @@ DTI_CMD = """python {exe_path} \
 -e {bvecs} \
 -t {gif_t1} \
 --t1_mask {gif_brain} \
--m {fmagni} \
--p {fphase} \
 -o {OUTPUT_FOLDER} \
 --no_qsub \
 --n_procs 1 \
@@ -69,11 +67,18 @@ def parse_args():
                     help="ID(s) on XNAT for dti scan.")
     ap.add_argument("--gif", dest="gif", required=True,
                     help="Label of GIF assessor on XNAT.")
+    ap.add_argument("--fmagni", dest="fmagni", Default=None,
+                    help="Field Map Magnitude image file to be associated with\
+                    the DWIs.")
+    ap.add_argument("--fphase", dest="fphase", Default=None,
+                    help="Field Map Phase image file to be associated with the\
+                    DWIs")
     ap.add_argument("--exe", dest="dti_exe", required=True,
                     help="Path to perform_dti_processing.py.")
-    ap.add_argument("--dtiargs", dest="dtiargs", help="Diffusion Read-Out time \
-                    used for susceptibility correction Default is 34.56",
-                    default=DEFAULT_ARGS)
+    ap.add_argument("--exeargs", dest="dti_args", help="other arguments for \
+perform_dti_processing as a string (rot/etd/ped). \
+Default: --rot 34.56 --etd 2.46 --ped -y",
+                    default="--rot 34.56 --etd 2.46 --ped -y")
     ap.add_argument("--openmp_core", dest="openmp_core",
                     help="Number of core used.", default=1)
     ap.add_argument("--working_dir", dest="working_dir", default="",
@@ -199,12 +204,14 @@ class Spider_Diffusion_Model_Fitting(SessionSpider):
                                  bvecs=bvecs,
                                  gif_t1=self.inputs['t1'],
                                  gif_brain=self.inputs['gif'],
-                                 fmagni=self.fmagni,
-                                 fphase=self.fphase,
                                  output=os.path.join(self.jobdir, 'outputs'),
                                  number_core=self.number_core,
                                  working_dir=working_dir,
                                  args=self.dtiargs)
+            if self.fmagni:
+                cmd = "%s -m %s" % (cmd, self.fmagni)
+            if self.fphase:
+                cmd = "%s -p %s" % (cmd, self.fphase)
             self.run_system_cmd(cmd)
             # self.make_pdf()
 

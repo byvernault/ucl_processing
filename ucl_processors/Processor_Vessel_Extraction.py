@@ -1,4 +1,4 @@
-"""Processor to extract vessel using niftkVesselExtractor.
+"""Processor associated to Spider_Vessel_Extraction.
 
 Author:         Benjamin Yvernault
 contact:        byvernault@gmail.com
@@ -24,9 +24,8 @@ LOGGER = logging.getLogger('dax')
 # Default values for arguments:
 # EDIT PARAMETERS FOR YOUR SPIDER CASE (SPIDER_PATH, WALLTIME, etc...)
 HOME = os.path.expanduser("~")
-CS_PATH = 'Xnat-management/ucl_processing/ucl_spiders'
-DEFAULT_SPIDER_PATH = os.path.join(HOME, CS_PATH,
-                                   'Spider_Vessel_Extraction_v1_0_0.py')
+DEFAULT_SPIDER_PATH = os.path.join(HOME, 'Xnat-management/ucl_processing/\
+ucl_spiders/Spider_Vessel_Extraction_v1_0_0.py')
 DEFAULT_WALLTIME = '02:00:00'
 DEFAULT_MEM = 2048
 DEFAULT_PIXEL_SIZE = '0.775438'
@@ -34,9 +33,16 @@ DEFAULT_SCAN_TYPES = ['T1', 'MPRAGE']  # ADD SCAN TYPES
 DEFAULT_VESSEL_PATH = 'niftkVesselExtractor'
 
 # Format for the spider command line
-SPIDER_FORMAT = '''python {spider} -p {proj} -s {subj} -e {sess} -c {scan} \
---min {pixel_size} --vesselExtPath {vessel_path} -d {dir} \
---suffix "{suffix_proc}"'''
+SPIDER_FORMAT = """python {spider} \
+-p {proj} \
+-s {subj} \
+-e {sess} \
+-c {scan} \
+--min {pixel_size} \
+--vesselExtPath {vessel_path} \
+-d {dir} \
+--suffix "{suffix_proc}"
+"""
 
 
 class Processor_Vessel_Extraction(ScanProcessor):
@@ -56,25 +62,25 @@ class Processor_Vessel_Extraction(ScanProcessor):
                  scan_types=DEFAULT_SCAN_TYPES,
                  vessel_path=DEFAULT_VESSEL_PATH,
                  suffix_proc=''):
-        """Init method."""
-        super(Processor_Vessel_Extraction, self).__init__(scan_types,
-                                                          walltime,
-                                                          mem_mb,
-                                                          spider_path,
-                                                          version,
-                                                          suffix_proc=suffix_proc)
+        """Entry point for Processor_Vessel_Extraction Class."""
+        super(Processor_Vessel_Extraction,
+              self).__init__(scan_types, walltime, mem_mb, spider_path,
+                             version, suffix_proc=suffix_proc)
         self.vessel_path = vessel_path
 
     def has_inputs(self, cscan):
-        """function overridden from base class.
+        """Method overridden from base class.
 
-        By definition, status = 0 if still NEED_INPUTS, -1 if NO_DATA,
-            1 if NEED_TO_RUN - qcstatus needs a value only when -1 or 0.
-        You can set qcstatus to a short string that explain why it's not
-        ready to run. e.g: No NIFTI
+        By definition:
+            status = 0  -> NEED_INPUTS,
+            status = 1  -> NEED_TO_RUN
+            status = -1 -> NO_DATA
+            qcstatus needs a value only when -1 or 0.
+        You need to set qcstatus to a short string that explain
+        why it's no ready to run. e.g: No NIFTI
 
-        :param cscan: object cscan define in dax.XnatUtils
-         (see XnatUtils in dax for information)
+        :param csess: object csess define in dax.XnatUtils
+                      (see XnatUtils in dax for information)
         :return: status, qcstatus
         """
         if XnatUtils.is_cscan_unusable(cscan):
@@ -88,7 +94,7 @@ class Processor_Vessel_Extraction(ScanProcessor):
         return 0, 'No NIFTI'
 
     def get_cmds(self, assessor, jobdir):
-        """function to generate the spider command for cluster job.
+        """Method to generate the spider command for cluster job.
 
         :param assessor: pyxnat assessor object
         :param jobdir: jobdir where the job's output will be generated
