@@ -90,7 +90,7 @@ class Processor_GIF_Parcellation(ScanProcessor):
         You need to set qcstatus to a short string that explain
         why it's no ready to run. e.g: No NIFTI
 
-        :param csess: object csess define in dax.XnatUtils
+        :param cscan: object cscan define in dax.XnatUtils
                       (see XnatUtils in dax for information)
         :return: status, qcstatus
         """

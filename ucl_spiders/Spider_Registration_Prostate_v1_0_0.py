@@ -121,7 +121,7 @@ class Spider_Registration_Prostate(SessionSpider):
     def __init__(self, spider_path, jobdir,
                  xnat_project, xnat_subject, xnat_session,
                  xnat_host=None, xnat_user=None, xnat_pass=None, suffix=""):
-        """Init method for Class."""
+        """Entry point for Spider_Registration_Prostate Class."""
         super(Spider_Registration_Prostate, self).__init__(spider_path, jobdir,
                                                            xnat_project,
                                                            xnat_subject,

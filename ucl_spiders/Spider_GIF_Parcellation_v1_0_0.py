@@ -93,7 +93,7 @@ class Spider_GIF_Parcellation(ScanSpider):
                  xnat_subject, xnat_session, xnat_scan,
                  xnat_host=None, xnat_user=None, xnat_pass=None,
                  number_core=1, suffix=""):
-        """Init method for Spider Scan Class."""
+        """Entry point for Spider_GIF_Parcellation Class."""
         super(Spider_GIF_Parcellation, self).__init__(spider_path, jobdir,
                                                       xnat_project,
                                                       xnat_subject,

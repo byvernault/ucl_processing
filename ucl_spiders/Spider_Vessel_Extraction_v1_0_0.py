@@ -68,7 +68,7 @@ class Spider_Vessel_Extraction(ScanSpider):
     def __init__(self, spider_path, jobdir, xnat_project, xnat_subject,
                  xnat_session, xnat_scan, xnat_host=None, xnat_user=None,
                  xnat_pass=None, suffix=""):
-        """Init function for the Spider class."""
+        """Entry point for Spider_Vessel_Extraction Class."""
         super(Spider_Vessel_Extraction, self).__init__(spider_path,
                                                        jobdir,
                                                        xnat_project,

@@ -111,7 +111,7 @@ class Spider_Registration2Ref(SessionSpider):
                  xnat_project, xnat_subject, xnat_session,
                  scan_ref, scans_id,
                  xnat_host=None, xnat_user=None, xnat_pass=None, suffix=""):
-        """Init Method."""
+        """Entry point for Spider_Registration2Ref Class."""
         super(Spider_Registration2Ref, self).__init__(spider_path, jobdir,
                                                       xnat_project,
                                                       xnat_subject,

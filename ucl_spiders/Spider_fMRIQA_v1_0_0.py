@@ -65,7 +65,7 @@ class Spider_fMRIQA(ScanSpider):
     def __init__(self, spider_path, jobdir, spm, fmatlab,
                  xnat_project, xnat_subject, xnat_session, xnat_scan,
                  xnat_host=None, xnat_user=None, xnat_pass=None, suffix=""):
-        """Init method."""
+        """Entry point for Spider_fMRIQA Class."""
         super(Spider_fMRIQA, self).__init__(spider_path, jobdir,
                                             xnat_project, xnat_subject,
                                             xnat_session, xnat_scan,

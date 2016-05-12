@@ -106,7 +106,7 @@ class Spider_Diffusion_Model_Fitting(SessionSpider):
                  xnat_project, xnat_subject, xnat_session,
                  xnat_host=None, xnat_user=None, xnat_pass=None,
                  number_core=1, suffix=""):
-        """Init Method."""
+        """Entry point for Spider_Diffusion_Model_Fitting Class."""
         super(Spider_Diffusion_Model_Fitting, self).__init__(spider_path,
                                                              jobdir,
                                                              xnat_project,
