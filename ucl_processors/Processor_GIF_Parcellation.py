@@ -33,7 +33,7 @@ DEFAULT_MEM = 3850
 DEFAULT_PPN = 4
 DEFAULT_WORKING_DIR = '/scratch0/dax/'
 DEFAULT_TEMPLATE = '/cluster/project0/GIF/template-database-r2.1/db.xml'
-DEFAULT_GIF_PATH = 'perform_gif_propagation.py'
+DEFAULT_GIF_PATH = '/home/dax/python/bin/perform_gif_propagation.py'
 DEFAULT_SCAN_TYPES = ['T1', 'MPRAGE']  # ADD SCAN TYPES
 
 # Format for the spider command line
