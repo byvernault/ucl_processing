@@ -323,11 +323,22 @@ class Spider_Registration_Prostate(SessionSpider):
         # Make PDF
         self.make_pdf()
 
+        # Zip the DICOMs output:
+        initdir = os.getcwd()
+        # Zip all the files in the directory
+        zip_name = os.path.join(self.jobdir, 'outputs', 'OSIRIX', 'osirix.zip')
+        os.chdir(os.path.join(self.jobdir, 'outputs', 'OSIRIX'))
+        os.system('zip -r %s * > /dev/null' % zip_name)
+        # return to the initial directory:
+        os.chdir(initdir)
+
     def finish(self):
         """Method to copy the results in dax.RESULTS_DIR."""
         out_dir = os.path.join(self.jobdir, 'outputs')
+        # Zipping all the dicoms in the OSIRIX folder and keep the zip
+        zip_osirix = os.path.join(out_dir, 'OSIRIX', 'osirix.zip')
         results_dict = {'PDF': self.pdf_final,
-                        'OSIRIX': os.path.join(out_dir, 'OSIRIX')}
+                        'OSIRIX': zip_osirix}
         for scan_id in self.sources.keys():
             results_dict[scan_id] = os.path.join(out_dir, scan_id)
         self.upload_dict(results_dict)
