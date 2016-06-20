@@ -557,8 +557,7 @@ def convert_nifti_2_dicoms(nifti_path, dcm_targets, dicom_source,
     if not os.path.isfile(dicom_source):
         err = "DICOM File %s not found after reg_f3d."
         raise Exception(err % dicom_source)
-    adc_dcm_obj = dicom.read_file(dicom_source,
-                                  force=True)
+    adc_dcm_obj = dicom.read_file(dicom_source)
 
     # Make output_folder:
     if not os.path.exists(output_folder):
