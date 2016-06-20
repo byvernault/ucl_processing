@@ -184,7 +184,7 @@ class Spider_Registration_Prostate(SessionSpider):
         tnii_obj = target_scan.resource('NIFTI')
         self.target['nii'] = XnatUtils.download_file_from_obj(target_folder,
                                                               tnii_obj)
-        tdcm_obj = target_scan.resource('NIFTI')
+        tdcm_obj = target_scan.resource('DICOM')
         self.target['dcm'] = XnatUtils.download_files_from_obj(target_dcm,
                                                                tdcm_obj)
         self.target['type'] = target_scan.attrs.get('type')
@@ -252,8 +252,7 @@ class Spider_Registration_Prostate(SessionSpider):
             if not os.path.isfile(dcm_file):
                 err = "DICOM File %s not found after download."
                 raise Exception(err % dcm_file)
-            t2_dcm_obj = dicom.read_file(dcm_file, stop_before_pixels=True,
-                                         force=True)
+            t2_dcm_obj = dicom.read_file(dcm_file)
             dcm_obj_sorted[t2_dcm_obj[0x00200032].value[2]] = t2_dcm_obj
         dcm_obj_sorted_list = [dcm_obj_sorted[key] for key in
                                sorted(dcm_obj_sorted)]
@@ -558,7 +557,7 @@ def convert_nifti_2_dicoms(nifti_path, dcm_targets, dicom_source,
     if not os.path.isfile(dicom_source):
         err = "DICOM File %s not found after reg_f3d."
         raise Exception(err % dicom_source)
-    adc_dcm_obj = dicom.read_file(dicom_source, stop_before_pixels=True,
+    adc_dcm_obj = dicom.read_file(dicom_source,
                                   force=True)
 
     # Make output_folder:
