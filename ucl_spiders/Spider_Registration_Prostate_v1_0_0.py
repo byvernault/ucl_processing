@@ -11,8 +11,10 @@ Purpose:        Register ADC scan to T2 scan
 # Python packages import
 import os
 import sys
+import glob
 import time
 import dicom
+import shutil
 import datetime
 import numpy as np
 import nibabel as nib
@@ -335,12 +337,28 @@ class Spider_Registration_Prostate(SessionSpider):
     def finish(self):
         """Method to copy the results in dax.RESULTS_DIR."""
         out_dir = os.path.join(self.jobdir, 'outputs')
+        # Organise the outputs:
+        ala_dir = os.path.join(out_dir, 'REG_ALA')
+        aff_dir = os.path.join(out_dir, 'AFF')
+        reg_dir = os.path.join(out_dir, 'REG_F3D')
+        cpp_dir = os.path.join(out_dir, 'CPP')
+        # Copy files:
+        for scan_id, res_dict in self.sources.items():
+            for folder in ['REG_ALA', 'REG_F3D', 'AFF', 'CPP']:
+                old_path = glob.glob(os.path.join(out_dir, scan_id,
+                                                  folder, '*'))
+                new_path = os.path.join(out_dir, folder,
+                                        os.path.basename(old_path))
+                shutil.copy(old_path, new_path)
         # Zipping all the dicoms in the OSIRIX folder and keep the zip
         zip_osirix = os.path.join(out_dir, 'OSIRIX', 'osirix.zip')
         results_dict = {'PDF': self.pdf_final,
+                        'REG_ALA': ala_dir,
+                        'AFF': aff_dir,
+                        'REG_F3D': reg_dir,
+                        'CPP': cpp_dir,
                         'OSIRIX': zip_osirix}
-        for scan_id in self.sources.keys():
-            results_dict[scan_id] = os.path.join(out_dir, scan_id)
+        # Upload data:
         self.upload_dict(results_dict)
         self.end()
 
