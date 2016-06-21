@@ -215,6 +215,7 @@ class Spider_Registration_Prostate(SessionSpider):
             self.sources[scan_id]['type'] = source_scan.attrs.get('type')
             self.sources[scan_id]['ID'] = scan_id
 
+        print self.sources
         xnat.disconnect()
         self.time_writer('Disconnection of XNAT')
 
@@ -337,17 +338,16 @@ class Spider_Registration_Prostate(SessionSpider):
         """Method to copy the results in dax.RESULTS_DIR."""
         out_dir = os.path.join(self.jobdir, 'outputs')
         # Organise the outputs:
-        ala_dir = os.path.join(out_dir, 'REG_ALA')
-        aff_dir = os.path.join(out_dir, 'AFF')
-        reg_dir = os.path.join(out_dir, 'REG_F3D')
-        cpp_dir = os.path.join(out_dir, 'CPP')
+        ala_dir = XnatUtils.makedir(os.path.join(out_dir, 'REG_ALA'))
+        aff_dir = XnatUtils.makedir(os.path.join(out_dir, 'AFF'))
+        reg_dir = XnatUtils.makedir(os.path.join(out_dir, 'REG_F3D'))
+        cpp_dir = XnatUtils.makedir(os.path.join(out_dir, 'CPP'))
         # Copy files:
         for scan_id, res_dict in self.sources.items():
             for folder in ['REG_ALA', 'REG_F3D', 'AFF', 'CPP']:
                 old_path = glob.glob(os.path.join(out_dir, scan_id,
-                                                  folder, '*'))
-                new_path = os.path.join(out_dir, folder,
-                                        os.path.basename(old_path))
+                                                  folder, '*'))[0]
+                new_path = os.path.join(out_dir, folder)
                 shutil.copy(old_path, new_path)
         # Zipping all the dicoms in the OSIRIX folder and keep the zip
         zip_osirix = os.path.join(out_dir, 'OSIRIX', 'osirix.zip')
