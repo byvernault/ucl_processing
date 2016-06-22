@@ -174,7 +174,7 @@ class Spider_GIF_Parcellation(ScanSpider):
                         'PRIOR': prior,
                         'SEG': seg,
                         'TIV': tiv,
-                        'VOLUME': volumes}
+                        'STATS': volumes}
         self.upload_dict(results_dict)
         self.end()
 
