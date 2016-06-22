@@ -1,11 +1,11 @@
-"""Spider to regirster different modalities for prostate cancer project.
+"""Spider to register VERDICT modalities for prostate cancer project.
 
 Author:         Benjamin Yvernault
 contact:        b.yvernault@ucl.ac.uk
 Spider name:    Registration_Prostate
 Spider version: 1.0.0
 Creation date:  2016-03-15 13:33:03.911277
-Purpose:        Register DWI-ADC and DCE scans to T2 scan
+Purpose:        Register VERDICT modalities
 """
 
 # Python packages import
@@ -25,11 +25,10 @@ from dax import spiders, XnatUtils, SessionSpider
 
 __author__ = "Benjamin Yvernault"
 __email__ = "b.yvernault@ucl.ac.uk"
-__purpose__ = "Register Prostate Scans (DWI-ADC and DCE to T2)"
-__spider_name__ = "Registration_Prostate"
+__purpose__ = "Register VERDICT modalities."
+__spider_name__ = "Registration_Verdict"
 __version__ = "1.0.0"
-__modifications__ = """2016-03-15 13:33:03.911277 - Original write
-2016-05-10 18:04:01 - Update to new format respecting pep8
+__modifications__ = """2016-06-21 16:41:03 - Original write
 """
 
 REG_ALADIN_CMD = "{exe_path} \
@@ -38,17 +37,14 @@ REG_ALADIN_CMD = "{exe_path} \
 -res {res} \
 -aff {aff} \
 {args}"
-REG_F3D_CMD = "{exe_path} \
+REG_RESAMPLE_CMD = "{exe_path} \
 -ref {ref} \
 -flo {flo} \
 -aff {aff} \
--cpp {cpp} \
 -res {res} \
 {args}"
-DEFAULT_ARGS_REG_ALADIN = " -maxit 15 -ln 4 -lp 4 -interp 1"
-DEFAULT_ARGS_REG_F3D = " -ln 4 -lp 4 -jl 0.1 \
--be 0.05 -maxit 250 -lncc 0 5.0 -sx 2.5"
-# DICOMs TAG to copy
+DEFAULT_ARGS_REG_ALADIN = " -rigOnly "
+DEFAULT_ARGS_REG_RESAMPLE = ""
 TAGS_TO_COPY = [0x00185100,  # Patient Position
                 0x00180050,  # Slice Thicknes
                 0x00180088,  # Spacing Between Slices
@@ -78,14 +74,14 @@ def parse_args():
         --regAladin : path to reg_aladin's executable
         --argsRegAladin : arguments for Reg Aladin.
           Default: -maxit 15 -ln 4 -lp 4 -interp 1
-        --regf3d : path to reg_f3d's executable
-        --argRegf3d : arguments for reg_f3d.
+        --regResample : path to reg_resample's executable
+        --argRegResample : arguments for reg_f3d.
           Default: -ln 4 -lp 4 -jl 0.1 -be 0.05 -maxit 250 -lncc 0 5.0 -sx 2.5
         --openmp_core : number of core use by reg_aladin. Default: one
 
     :return: argument parser object created by parse_args()
     """
-    ap = spiders.get_session_argparser("Spider_Registration_Prostate",
+    ap = spiders.get_session_argparser("Spider_%s" % __spider_name__,
                                        __purpose__)
     ap.add_argument("--sources", dest="sources_id", required=True,
                     help="Source Scans ID from XNAT.")
@@ -96,65 +92,63 @@ def parse_args():
     ap.add_argument("--argsRegAladin", dest="args_reg_aladin",
                     help="Argument for reg_aladin. \
 Default: -maxit 15 -ln 4 -lp 4 -interp 1.", default=DEFAULT_ARGS_REG_ALADIN)
-    ap.add_argument("--regf3d", dest="regf3d_exe", required=True,
-                    help="path to reg_f3d's executable.")
-    ap.add_argument("--argsRegf3d", dest="args_regf3d",
-                    help="Argument for reg_f3d. \
-Default: -maxit 15 -ln 4 -lp 4 -interp 1.", default=DEFAULT_ARGS_REG_F3D)
+    ap.add_argument("--regResample", dest="regf3d_exe", required=True,
+                    help="path to reg_resample's executable.")
+    ap.add_argument("--argRegResample", dest="args_regf3d",
+                    help="Argument for reg_resample. \
+Default: -maxit 15 -ln 4 -lp 4 -interp 1.", default=DEFAULT_ARGS_REG_RESAMPLE)
     ap.add_argument("--openmp_core", dest="openmp_core", default=1,
                     help="Number of core used by reg_aladin.")
     return ap.parse_args()
 
 
-class Spider_Registration_Prostate(SessionSpider):
-    """Session Spider class to do: Register ADC scan to T2 scan.
+class Spider_Registration_Verdict(SessionSpider):
+    """Session Spider class to do: Register VERDICT modalities.
 
     :param spider_path: spider file path
     :param jobdir: directory for temporary files
+    :param target_id: target scan ID XNAT
+    :param sources_id: sources scans ID XNAT
     :param xnat_project: project ID on XNAT
     :param xnat_subject: subject label on XNAT
     :param xnat_session: experiment label on XNAT
+    :param reg_aladin_exe: reg_aladin executable path
+    :param reg_resample_exe: reg_resample executable path
     :param xnat_host: host for XNAT if not set in environment variables
     :param xnat_user: user for XNAT if not set in environment variables
     :param xnat_pass: password for XNAT if not set in environment variables
     :param suffix: suffix to the assessor creation
     """
 
-    def __init__(self, spider_path, jobdir,
+    def __init__(self, spider_path, jobdir, target_id, sources_id,
                  xnat_project, xnat_subject, xnat_session,
+                 reg_aladin_exe='reg_aladin', reg_resample_exe='reg_resample',
+                 args_reg_aladin=DEFAULT_ARGS_REG_ALADIN,
+                 args_reg_resample=DEFAULT_ARGS_REG_RESAMPLE,
                  xnat_host=None, xnat_user=None, xnat_pass=None, suffix=""):
         """Entry point for Spider_Registration_Prostate Class."""
-        super(Spider_Registration_Prostate, self).__init__(spider_path, jobdir,
-                                                           xnat_project,
-                                                           xnat_subject,
-                                                           xnat_session,
-                                                           xnat_host,
-                                                           xnat_user,
-                                                           xnat_pass, suffix)
+        super(Spider_Registration_Verdict, self).__init__(spider_path, jobdir,
+                                                          xnat_project,
+                                                          xnat_subject,
+                                                          xnat_session,
+                                                          xnat_host,
+                                                          xnat_user,
+                                                          xnat_pass, suffix)
         # Inputs
-        self.target = dict()
-        self.sources = dict()
+        self.target_id = target_id
+        self.sources_id = XnatUtils.get_input_list(sources_id, list())
+        self.inputs = dict()
 
         # Outputs
         self.outputs = dict()
-        self.pdf_final = os.path.join(self.jobdir, 'Registration_prostate.pdf')
+        self.pdf_final = os.path.join(self.jobdir, 'Registration_VERDICT.pdf')
         # Check Executable:
-        self.reg_aladin_exe = self.check_exe(ARGS.reg_aladin_exe, 'reg_aladin')
-        self.reg_f3d_exe = self.check_exe(ARGS.regf3d_exe, 'reg_f3d')
-        # Print version for Niftyreg - GIFi
-        pversion = sb.Popen([self.reg_aladin_exe, '--version'],
-                            stdout=sb.PIPE,
-                            stderr=sb.PIPE)
-        nve_version, _ = pversion.communicate()
-        self.time_writer('reg_aladin (Niftyreg) version: %s' %
-                         (nve_version.strip()))
-        # Print version for Niftyreg - GIFi
-        pversion = sb.Popen([self.reg_f3d_exe, '--version'],
-                            stdout=sb.PIPE,
-                            stderr=sb.PIPE)
-        nve_version, _ = pversion.communicate()
-        self.time_writer('reg_f3d (Niftyreg) version: %s' %
-                         (nve_version.strip()))
+        self.reg_aladin_exe = self.check_executable(reg_aladin_exe,
+                                                    'reg_aladin')
+        self.reg_resample_exe = self.check_executable(reg_resample_exe,
+                                                      'reg_resample')
+        self.args_reg_aladin = args_reg_aladin
+        self.args_reg_resample = args_reg_resample
 
     def pre_run(self):
         """Method to download data from XNAT.
@@ -167,7 +161,7 @@ class Spider_Registration_Prostate(SessionSpider):
 
         # Target
         target_folder = XnatUtils.makedir(os.path.join(input_folder,
-                                                       ARGS.target_id),
+                                                       self.target_id),
                                           subdir=False)
         target_dcm = XnatUtils.makedir(os.path.join(target_folder, 'DICOM'),
                                        subdir=False)
@@ -175,12 +169,12 @@ class Spider_Registration_Prostate(SessionSpider):
         xnat = XnatUtils.get_interface(host=self.host,
                                        user=self.user,
                                        pwd=self.pwd)
-        self.time_writer('Downloading target %s ...' % ARGS.target_id)
+        self.time_writer('Downloading target %s ...' % self.target_id)
         target_scan = XnatUtils.select_obj(xnat,
-                                           ARGS.proj_label,
-                                           ARGS.subj_label,
-                                           ARGS.sess_label,
-                                           ARGS.target_id)
+                                           self.xnat_project,
+                                           self.xnat_subject,
+                                           self.xnat_session,
+                                           self.target_id)
         tnii_obj = target_scan.resource('NIFTI')
         self.target['nii'] = XnatUtils.download_file_from_obj(target_folder,
                                                               tnii_obj)
@@ -188,21 +182,20 @@ class Spider_Registration_Prostate(SessionSpider):
         self.target['dcm'] = XnatUtils.download_files_from_obj(target_dcm,
                                                                tdcm_obj)
         self.target['type'] = target_scan.attrs.get('type')
-        self.target['ID'] = ARGS.target_id
+        self.target['ID'] = self.target_id
 
         # Sources
-        sources_list = XnatUtils.get_input_list(ARGS.sources_id, list())
-        self.time_writer('Downloading sources %s ...' % sources_list)
-        for scan_id in sources_list:
+        self.time_writer('Downloading sources %s ...' % self.sources_id)
+        for scan_id in self.sources_id:
             # Make directories
             spath = os.path.join(input_folder, scan_id)
             source_folder = XnatUtils.makedir(spath, subdir=False)
             dpath = os.path.join(source_folder, 'DICOM')
             source_dcm = XnatUtils.makedir(dpath, subdir=False)
             source_scan = XnatUtils.select_obj(xnat,
-                                               ARGS.proj_label,
-                                               ARGS.subj_label,
-                                               ARGS.sess_label,
+                                               self.xnat_project,
+                                               self.xnat_subject,
+                                               self.xnat_session,
                                                scan_id)
             snii_obj = source_scan.resource('NIFTI')
             nii_list = XnatUtils.download_file_from_obj(source_folder,
@@ -219,8 +212,7 @@ class Spider_Registration_Prostate(SessionSpider):
         xnat.disconnect()
         self.time_writer('Disconnection of XNAT')
 
-    @staticmethod
-    def check_exe(executable, name):
+    def check_executable(self, executable, name):
         """Method to check the executable.
 
         :param executable: executable path
@@ -228,18 +220,30 @@ class Spider_Registration_Prostate(SessionSpider):
         :return: Complete path to the executable
         """
         if executable == name:
-            return name
+            # Check the output of which:
+            pwhich = sb.Popen(['which', executable],
+                              stdout=sb.PIPE,
+                              stderr=sb.PIPE)
+            results, _ = pwhich.communicate()
+            if not results or results.startswith('/usr/bin/which: no'):
+                raise Exception("Executable '%s' not found on your computer."
+                                % (name))
         else:
             executable = os.path.abspath(executable)
             if executable.endswith(name):
-                path = executable
+                pass
             elif os.path.isdir(executable):
-                path = os.path.join(executable, name)
-
+                executable = os.path.join(executable, name)
             if not os.path.exists(executable):
                 raise Exception("Executable '%s' not found" % (executable))
 
-            return path
+        pversion = sb.Popen([executable, '--version'],
+                            stdout=sb.PIPE,
+                            stderr=sb.PIPE)
+        nve_version, _ = pversion.communicate()
+        self.time_writer('%s version: %s' %
+                         (name, nve_version.strip()))
+        return executable
 
     def run(self):
         """Method running the process for the spider on the inputs data."""
@@ -274,17 +278,17 @@ class Spider_Registration_Prostate(SessionSpider):
             self.time_writer("reg_aladin with ref %s and flo %s" %
                              (self.target['nii'], res_dict['nii']))
             aladin_output = os.path.join(ala_folder, "%s_2_%s_reg_aladin.nii" %
-                                                     (scan_id, ARGS.target_id))
+                                                     (scan_id, self.target_id))
             affine_fpath = os.path.join(aff_folder,
                                         "%s_2_%s_affine_transformation.txt" %
-                                        (scan_id, ARGS.target_id))
+                                        (scan_id, self.target_id))
 
             cmd = REG_ALADIN_CMD.format(exe_path=self.reg_aladin_exe,
                                         ref=self.target['nii'],
                                         flo=res_dict['nii'],
                                         res=aladin_output,
                                         aff=affine_fpath,
-                                        args=ARGS.args_reg_aladin)
+                                        args=self.args_reg_aladin)
             self.run_system_cmd(cmd)
             # Check that the affine file exists:
             if not os.path.exists(affine_fpath):
@@ -297,16 +301,16 @@ class Spider_Registration_Prostate(SessionSpider):
                               res_dict['nii'],
                               affine_fpath))
             f3d_output = os.path.join(f3d_folder, "%s_2_%s_reg_f3d.nii" %
-                                                  (scan_id, ARGS.target_id))
+                                                  (scan_id, self.target_id))
             f3d_cpp = os.path.join(cpp_folder, "%s_2_%s_reg_f3d_cpp.nii" %
-                                               (scan_id, ARGS.target_id))
-            cmd = REG_F3D_CMD.format(exe_path=self.reg_f3d_exe,
-                                     ref=self.target['nii'],
-                                     flo=res_dict['nii'],
-                                     res=f3d_output,
-                                     cpp=f3d_cpp,
-                                     aff=affine_fpath,
-                                     args=ARGS.args_regf3d)
+                                               (scan_id, self.target_id))
+            cmd = REG_RESAMPLE_CMD.format(exe_path=self.reg_f3d_exe,
+                                          ref=self.target['nii'],
+                                          flo=res_dict['nii'],
+                                          res=f3d_output,
+                                          cpp=f3d_cpp,
+                                          aff=affine_fpath,
+                                          args=self.args_reg_resample)
             self.run_system_cmd(cmd)
             XnatUtils.gzip_nii(ala_folder)
             XnatUtils.gzip_nii(f3d_folder)
@@ -449,7 +453,7 @@ at UCL, London' % (str(date), str(pdf_page_number), str(pdf_pages))
                 self.plot_images(fig, out_data, index+2, out_dict['label'])
 
             # Save figure to PDF page
-            pdf_name = 'Reg_%s_2_%s_page_%s.pdf' % (ARGS.target_id, scan_id,
+            pdf_name = 'Reg_%s_2_%s_page_%s.pdf' % (self.target_id, scan_id,
                                                     page_count)
             pdf_page = os.path.join(self.jobdir, pdf_name)
             self.save_pdf_page(fig, pdf_page, date, page_count, total_nb_pages)
@@ -586,24 +590,31 @@ def convert_nifti_2_dicoms(nifti_path, dcm_targets, dicom_source,
 if __name__ == '__main__':
     ARGS = parse_args()
     # generate spider object:
-    spider_obj = Spider_Registration_Prostate(spider_path=sys.argv[0],
-                                              jobdir=ARGS.temp_dir,
-                                              xnat_project=ARGS.proj_label,
-                                              xnat_subject=ARGS.subj_label,
-                                              xnat_session=ARGS.sess_label,
-                                              xnat_host=ARGS.host,
-                                              xnat_user=ARGS.user,
-                                              xnat_pass=None,
-                                              suffix=ARGS.suffix)
+    spider_obj = Spider_Registration_Verdict(
+                        spider_path=sys.argv[0],
+                        jobdir=ARGS.temp_dir,
+                        target_id=ARGS.target_id,
+                        sources_id=ARGS.sources_id,
+                        xnat_project=ARGS.proj_label,
+                        xnat_subject=ARGS.subj_label,
+                        xnat_session=ARGS.sess_label,
+                        reg_aladin_exe=ARGS.reg_aladin_exe,
+                        reg_resample_exe=ARGS.reg_resample_exe,
+                        args_reg_aladin=ARGS.args_reg_aladin,
+                        args_reg_resample=ARGS.args_reg_resample,
+                        xnat_host=ARGS.host,
+                        xnat_user=ARGS.user,
+                        xnat_pass=None,
+                        suffix=ARGS.suffix)
 
     # print some information before starting
     spider_obj.print_init(ARGS, "Benjamin Yvernault", "b.yvernault@ucl.ac.uk")
 
     # Pre-run method to download data from XNAT
-    spider_obj.pre_run()
+    # spider_obj.pre_run()
 
     # Run method
-    spider_obj.run()
+    # spider_obj.run()
 
     # Finish method to copy results
-    spider_obj.finish()
+    # spider_obj.finish()
