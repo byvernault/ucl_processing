@@ -10,7 +10,11 @@ Purpose:        Extract the vessel from the T1/MPRAGE scan
 
 import os
 import sys
+import numpy as np
+import nibabel as nib
 import subprocess as sb
+from datetime import datetime
+import matplotlib.pyplot as plt
 from dax import XnatUtils, spiders, ScanSpider
 
 __author__ = "Benjamin Yvernault"
@@ -23,6 +27,7 @@ __modifications__ = """2016-02-22 14:19:24.698923 - Original write
 """
 
 DEFAULT_PIXEL_SIZE = '0.775438'
+DEFAULT_EXE_PATH = 'niftkVesselExtractor'
 VESSEL_CMD = """{exe_path} -i {input} -o {output} --mod 0 --aone 0.5 --atwo 2 \
 --min {pixel_size} --max 3.09 --intfil"""
 
@@ -62,12 +67,13 @@ class Spider_Vessel_Extraction(ScanSpider):
     :param xnat_host: host for XNAT if not set in environment variables
     :param xnat_user: user for XNAT if not set in environment variables
     :param xnat_pass: password for XNAT if not set in environment variables
+    :param exe_path: niftkVesselExtractor path
     :param suffix: suffix to the assessor creation
     """
 
     def __init__(self, spider_path, jobdir, xnat_project, xnat_subject,
                  xnat_session, xnat_scan, xnat_host=None, xnat_user=None,
-                 xnat_pass=None, suffix=""):
+                 xnat_pass=None, exe_path=DEFAULT_EXE_PATH, suffix=""):
         """Entry point for Spider_Vessel_Extraction Class."""
         super(Spider_Vessel_Extraction, self).__init__(spider_path,
                                                        jobdir,
@@ -81,9 +87,11 @@ class Spider_Vessel_Extraction(ScanSpider):
                                                        suffix)
         self.inputs = list()
         self.output = ''
+        self.pdfpath = ''
         self.pixel_size = DEFAULT_PIXEL_SIZE
+        self.exe_path = exe_path
         # Print version for Niftyreg - GIFi
-        pversion = sb.Popen([ARGS.vessel_extractor, '--version'],
+        pversion = sb.Popen([exe_path, '--version'],
                             stdout=sb.PIPE,
                             stderr=sb.PIPE)
         nve_version, _ = pversion.communicate()
@@ -125,30 +133,22 @@ Value not set on XNAT."
         else:
             self.pixel_size = min(vsize)
 
-    def run(self, vessel_extractor):
+    def run(self):
         """Method running the process for the spider on the inputs data.
 
         :return: None
         """
-        if vessel_extractor.endswith('niftkVesselExtractor'):
-            exe_path = vessel_extractor
-        elif os.path.isdir(vessel_extractor):
-            exe_path = os.path.join(vessel_extractor, "niftkVesselExtractor")
-
-        if not os.path.exists(exe_path):
-            raise Exception("Executable '%s' not found" % (exe_path))
-        else:
-            if not os.path.exists(os.path.join(self.jobdir, 'outputs')):
-                os.makedirs(os.path.join(self.jobdir, 'outputs'))
-            output_name = ("%s_vessel_extracted.nii.gz" %
-                           (os.path.basename(self.inputs[0]).split('.')[0]))
-            self.output = os.path.join(self.jobdir, 'outputs', output_name)
-            cmd = VESSEL_CMD.format(exe_path=exe_path,
-                                    input=self.inputs[0],
-                                    output=self.output,
-                                    pixel_size=self.pixel_size)
-            self.run_system_cmd(cmd)
-            # self.make_pdf()
+        if not os.path.exists(os.path.join(self.jobdir, 'outputs')):
+            os.makedirs(os.path.join(self.jobdir, 'outputs'))
+        output_name = ("%s_vessel_extracted.nii.gz" %
+                       (os.path.basename(self.inputs[0]).split('.')[0]))
+        self.output = os.path.join(self.jobdir, 'outputs', output_name)
+        cmd = VESSEL_CMD.format(exe_path=self.exe_path,
+                                input=self.inputs[0],
+                                output=self.output,
+                                pixel_size=self.pixel_size)
+        self.run_system_cmd(cmd)
+        self.make_pdf()
 
     def finish(self):
         """Method to copy the results in dax.RESULTS_DIR.
@@ -156,12 +156,166 @@ Value not set on XNAT."
         :return: None
         """
         results_dict = {
-                        # 'PDF': pdfpath,
-                        # 'OUTPUT': self.output
+                        'PDF': self.pdfpath,
+                        'OUTPUT': self.output
                         }
         self.upload_dict(results_dict)
         self.end()
 
+    def make_pdf(self):
+        """Method to make pdf."""
+        f_img = nib.load(self.output)
+        data = f_img.get_data()
+        nb_slices = data.shape[2]
+        slices = {'0': [(nb_slices-1)/12, (nb_slices-1)/6,
+                        (nb_slices-1)/4, (nb_slices-1)/3],
+                  '1': [5*(nb_slices-1)/12, (nb_slices-1)/2,
+                        7*(nb_slices-1)/12, 2*(nb_slices-1)/3],
+                  '2': [9*(nb_slices-1)/12, 5*(nb_slices-1)/6,
+                        11*(nb_slices-1)/12, (nb_slices-1)]}
+        labels = {'0': '',
+                  '1': '',
+                  '2': ''}
+        vmins = {'0': 0,
+                 '1': 0,
+                 '2': 0}
+        vmaxs = {'0': 100,
+                 '1': 100,
+                 '2': 100}
+        images = [self.output, self.output]
+        self.pdfpath = os.path.join(self.jobdir, 'vessel_report.pdf')
+        self.plot_images_figure(self.pdfpath, 1, images, 'Vessel Extraction',
+                                labels, slices=slices, cmap='hot',
+                                vmins=vmins, vmaxs=vmaxs)
+
+    def plot_images_figure(self, pdf_path, page_index, nii_images, title,
+                           image_labels, slices=None, cmap='gray',
+                           vmins=None, vmaxs=None):
+        """Plot list of images (3D-4D) on a figure (PDF page).
+
+        plot_images_figure will create one pdf page with only images.
+        Each image corresponds to one line with by default axial/sag/cor view
+        of the mid slice. If you use slices, it will show different slices of
+        the axial plan view. You can specify the cmap and the vmins/vmaxs if
+        needed by using a dictionary with the index of each line (0, 1, ...).
+
+        :param pdf_path: path to the pdf to save this figure to
+        :param page_index: page index for PDF
+        :param nii_images: python list of nifty images
+        :param title: Title for the report page
+        :param image_labels: list of titles for each images
+            one per image in nii_images
+        :param slices: dictionary of list of slices to display
+            if None, display axial, coronal, sagital
+        :param cmap: cmap to use to display images or dict
+            of cmaps for each images with the indices as key
+        :param vmins: define vmin for display (dict)
+        :param vmaxs: define vmax for display (dict)
+        :return: pdf path created
+
+        E.g for two images:
+        images = [imag1, image2]
+        slices = {'0':[50, 80, 100, 130],
+                  '1':[150, 180, 200, 220]}
+        labels = {'0': 'Label 1',
+                  '1': 'Label 2'}
+        cmaps = {'0':'hot',
+                 '1': 'gray'}
+        vmins = {'0':10,
+                 '1':20}
+        vmaxs = {'0':100,
+                 '1':150}
+        """
+        self.time_writer('INFO: generating pdf page %d with images.'
+                         % page_index)
+        fig = plt.figure(page_index, figsize=(7.5, 10))
+        # Titles:
+        if not isinstance(cmap, dict):
+            default_cmap = cmap
+            cmap = {}
+        else:
+            default_cmap = 'gray'
+        if not isinstance(vmins, dict):
+            self.time_writer("Warning: vmins wasn't a dictionary. \
+Using default.")
+            vmins = {}
+        if not isinstance(vmins, dict):
+            self.time_writer("Warning: vmaxs wasnt' a dictionary. \
+Using default.")
+            vmaxs = {}
+        if isinstance(nii_images, str):
+            nii_images = [nii_images]
+        number_im = len(nii_images)
+        for index, image in enumerate(nii_images):
+            # Open niftis with nibabel
+            f_img = nib.load(image)
+            data = f_img.get_data()
+            if len(data.shape) == 4:
+                data = data[:, :, :, data.shape[3]/2]
+            default_slices = [data.shape[2]/4, data.shape[2]/2,
+                              3*data.shape[2]/4]
+            default_label = 'Line %s' % index
+
+            if slices:
+                if not isinstance(slices, dict):
+                    self.time_writer("Warning: slices wasn't a dictionary. \
+Using default.")
+                    slices = {}
+                self.time_writer('INFO: showing different slices.')
+                li_slices = slices.get(str(index), default_slices)
+                slices_number = len(li_slices)
+                for slice_ind, slice_value in enumerate(li_slices):
+                    ind = slices_number*index+slice_ind+1
+                    ax = fig.add_subplot(number_im, slices_number, ind)
+                    data_z_rot = np.rot90(data[:, :, slice_value])
+                    ax.imshow(data_z_rot,
+                              cmap=cmap.get(str(index), default_cmap),
+                              vmin=vmins.get(str(index), None),
+                              vmax=vmaxs.get(str(index), None))
+                    ax.set_title('Slice %d' % slice_value, fontsize=7)
+                    ax.set_xticks([])
+                    ax.set_yticks([])
+                    if slice_ind == 0:
+                        ax.set_ylabel(image_labels.get(str(index),
+                                      default_label), fontsize=9)
+            else:
+                self.time_writer('INFO: display different plan view \
+(ax/sag/cor) of the mid slice.')
+                ax = fig.add_subplot(number_im, 3, 3*index+1)
+                data_z_rot = np.rot90(data[:, :, data.shape[2]/2])
+                ax.imshow(data_z_rot, cmap=cmap.get(str(index), default_cmap),
+                          vmin=vmins.get(str(index), None),
+                          vmax=vmaxs.get(str(index), None))
+                ax.set_title('Axial', fontsize=7)
+                ax.set_ylabel(image_labels.get(str(index), default_label),
+                              fontsize=9)
+                ax.set_xticks([])
+                ax.set_yticks([])
+                ax = fig.add_subplot(number_im, 3, 3*index+2)
+                data_y_rot = np.rot90(data[:, data.shape[1]/2, :])
+                ax.imshow(data_y_rot, cmap=cmap.get(str(index), default_cmap),
+                          vmin=vmins.get(str(index), None),
+                          vmax=vmaxs.get(str(index), None))
+                ax.set_title('Coronal', fontsize=7)
+                ax.set_axis_off()
+                ax = fig.add_subplot(number_im, 3, 3*index+3)
+                data_x_rot = np.rot90(data[data.shape[0]/2, :, :])
+                ax.imshow(data_x_rot, cmap=cmap.get(str(index), default_cmap),
+                          vmin=vmins.get(str(index), None),
+                          vmax=vmaxs.get(str(index), None))
+                ax.set_title('Sagittal', fontsize=7)
+                ax.set_axis_off()
+
+        fig.tight_layout()
+        date = datetime.now()
+        # Titles page
+        plt.figtext(0.5, 0.985, '-- %s PDF report --' % title,
+                    horizontalalignment='center', fontsize=12)
+        plt.figtext(0.5, 0.02, 'Date: %s -- page %d' % (str(date), page_index),
+                    horizontalalignment='center', fontsize=8)
+        plt.show()
+        fig.savefig(pdf_path, transparent=True, orientation='portrait',
+                    dpi=100)
 
 if __name__ == '__main__':
     ARGS = parse_args()
@@ -175,6 +329,7 @@ if __name__ == '__main__':
                                           xnat_host=ARGS.host,
                                           xnat_user=ARGS.user,
                                           xnat_pass=None,
+                                          exe_path=ARGS.vessel_extractor,
                                           suffix=ARGS.suffix)
     # print some information before starting
     spider_obj.print_init(ARGS, "Benjamin Yvernault", "b.yvernault@ucl.ac.uk")
@@ -183,7 +338,7 @@ if __name__ == '__main__':
     spider_obj.pre_run()
 
     # Run method
-    spider_obj.run(ARGS.vessel_extractor)
+    spider_obj.run()
 
     # Finish method to copy results
     spider_obj.finish()
