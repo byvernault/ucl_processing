@@ -182,7 +182,7 @@ Value not set on XNAT."
         vmaxs = {'0': 100,
                  '1': 100,
                  '2': 100}
-        images = [self.output, self.output]
+        images = [self.output, self.output, self.output]
         self.pdfpath = os.path.join(self.jobdir, 'vessel_report.pdf')
         self.plot_images_figure(self.pdfpath, 1, images, 'Vessel Extraction',
                                 labels, slices=slices, cmap='hot',
