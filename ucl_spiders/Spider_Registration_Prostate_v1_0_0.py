@@ -215,7 +215,6 @@ class Spider_Registration_Prostate(SessionSpider):
             self.sources[scan_id]['type'] = source_scan.attrs.get('type')
             self.sources[scan_id]['ID'] = scan_id
 
-        print self.sources
         xnat.disconnect()
         self.time_writer('Disconnection of XNAT')
 
