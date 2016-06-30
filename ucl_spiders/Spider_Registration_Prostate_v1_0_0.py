@@ -35,6 +35,7 @@ REG_ALADIN_CMD = "{exe_path} \
 -flo {flo} \
 -res {res} \
 -aff {aff} \
+-omp {omp} \
 {args}"
 REG_F3D_CMD = "{exe_path} \
 -ref {ref} \
@@ -42,6 +43,7 @@ REG_F3D_CMD = "{exe_path} \
 -aff {aff} \
 -cpp {cpp} \
 -res {res} \
+-omp {omp} \
 {args}"
 DEFAULT_ARGS_REG_ALADIN = " -maxit 15 -ln 4 -lp 4 -interp 1"
 DEFAULT_ARGS_REG_F3D = " -ln 4 -lp 4 -jl 0.1 \
@@ -202,7 +204,7 @@ class Spider_Registration_Prostate(SessionSpider):
         xnat.disconnect()
         self.time_writer('Disconnection of XNAT')
 
-    def run(self):
+    def run(self, openmp_core=1):
         """Method running the process for the spider on the inputs data."""
         output_folder = XnatUtils.makedir(os.path.join(self.jobdir, 'outputs'),
                                           subdir=False)
@@ -245,6 +247,7 @@ class Spider_Registration_Prostate(SessionSpider):
                                         flo=res_dict['nii'],
                                         res=aladin_output,
                                         aff=affine_fpath,
+                                        omp=openmp_core,
                                         args=ARGS.args_reg_aladin)
             self.run_system_cmd(cmd)
             # Check that the affine file exists:
@@ -267,6 +270,7 @@ class Spider_Registration_Prostate(SessionSpider):
                                      res=f3d_output,
                                      cpp=f3d_cpp,
                                      aff=affine_fpath,
+                                     omp=openmp_core,
                                      args=ARGS.args_regf3d)
             self.run_system_cmd(cmd)
             XnatUtils.gzip_nii(ala_folder)
@@ -477,7 +481,7 @@ if __name__ == '__main__':
     spider_obj.pre_run()
 
     # Run method
-    spider_obj.run()
+    spider_obj.run(ARGS.openmp_core)
 
     # Finish method to copy results
     spider_obj.finish()

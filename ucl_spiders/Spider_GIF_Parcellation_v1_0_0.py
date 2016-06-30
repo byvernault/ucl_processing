@@ -13,11 +13,7 @@ import os
 import sys
 import csv
 import glob
-import numpy as np
-import nibabel as nib
-import matplotlib.pyplot as plt
-import subprocess as sb
-from datetime import datetime
+from collections import OrderedDict
 from dax import spiders, ScanSpider
 
 __author__ = "Benjamin Yvernault"
@@ -30,8 +26,6 @@ __modifications__ = """2016-03-15 14:56 - Adding working_dir options
 """
 
 
-YLABELS = ['Bias Corrected', 'Brain', 'labels', 'Segmentation', 'tiv', 'prior']
-CMAPS = ['gray', 'gray', None, 'gray', 'gray', None]
 GIF_CMD = """python {exe_path} \
 -i {input} \
 -o {output} \
@@ -106,12 +100,8 @@ class Spider_GIF_Parcellation(ScanSpider):
         self.inputs = list()
         self.number_core = number_core
         # Print version for Niftyreg - GIFi
-        proc_nifty = sb.Popen(['reg_aladin', '--version'],
-                              stdout=sb.PIPE,
-                              stderr=sb.PIPE)
-        nifty_reg_version, _ = proc_nifty.communicate()
-        self.time_writer('Niftyreg version: %s' % (nifty_reg_version.strip()))
-        self.time_writer('GIF version: 3a76a255ab')
+        self.check_executable('reg_aladin', 'reg_aladin')
+        self.pdf_final = os.path.join(self.jobdir, 'GIF_parcellation.pdf')
 
     def pre_run(self):
         """Method to download data from XNAT.
@@ -166,8 +156,7 @@ class Spider_GIF_Parcellation(ScanSpider):
         tiv = glob.glob(os.path.join(out_dir, '*tiv.nii.gz'))
         # Volumes:
         volumes = glob.glob(os.path.join(out_dir, '*volumes.csv'))
-        results_dict = {'PDF': os.path.join(self.jobdir,
-                                            'GIF_parcellation.pdf'),
+        results_dict = {'PDF': self.pdf_final,
                         'BIAS_COR': bias_corrected,
                         'BRAIN': brain,
                         'LABELS': labels,
@@ -178,49 +167,16 @@ class Spider_GIF_Parcellation(ScanSpider):
         self.upload_dict(results_dict)
         self.end()
 
-    def plot_images(self, fig, data, number_images, subplot_index):
-        """Method to plot the images on the PDF for the first page.
-
-        :param fig: figure from matplotlib
-        :param data: numpy array of the images (3D) to display
-        :param number_images: number of images for the subplot (6)
-        :param subplot_index: index of the line to display (1-6)
-        :return: None
-        """
-        ax = fig.add_subplot(number_images, 3, 3*subplot_index+1)
-        data_z_rot = np.rot90(data[:, :, data.shape[2]/2])
-        ax.imshow(data_z_rot, cmap=CMAPS[subplot_index])
-        if subplot_index == 0:
-            ax.set_title('Axial', fontsize=7)
-        ax.set_ylabel(YLABELS[subplot_index], fontsize=9)
-        ax.set_xticks([])
-        ax.set_yticks([])
-        ax = fig.add_subplot(number_images, 3, 3*subplot_index+2)
-        data_y_rot = np.rot90(data[:, data.shape[1]/2, :])
-        ax.imshow(data_y_rot, cmap=CMAPS[subplot_index])
-        if subplot_index == 0:
-            ax.set_title('Coronal', fontsize=7)
-        ax.set_axis_off()
-        ax = fig.add_subplot(number_images, 3, 3*subplot_index+3)
-        data_x_rot = np.rot90(data[data.shape[0]/2, :, :])
-        ax.imshow(data_x_rot, cmap=CMAPS[subplot_index])
-        if subplot_index == 0:
-            ax.set_title('Sagittal', fontsize=7)
-        ax.set_axis_off()
-
     def make_pdf(self):
         """Method to make the PDF for the spider.
 
         :return: None
         """
-        # Define output files
-        # Variables:
-        date = datetime.now()
-        print self.jobdir
-        # PDF path:
-        pdf_page1 = os.path.join(self.jobdir, 'GIF_parcellation_page1.pdf')
-        pdf_page2 = os.path.join(self.jobdir, 'GIF_parcellation_page2.pdf')
-        pdf_final = os.path.join(self.jobdir, 'GIF_parcellation.pdf')
+        # PDF pages:
+        pdf_pages = {
+            '1': os.path.join(self.jobdir, 'GIF_parcellation_page1.pdf'),
+            '2': os.path.join(self.jobdir, 'GIF_parcellation_page2.pdf')
+        }
 
         # Images outputs:
         out_dir = os.path.join(self.jobdir, 'outputs')
@@ -236,115 +192,53 @@ class Spider_GIF_Parcellation(ScanSpider):
         volumes = glob.glob(os.path.join(out_dir, '*volumes.csv'))
 
         # Page 1:
-        fig = plt.figure(1, figsize=(7.5, 10))
-        number_images = len(list_images)
+        images = []
         for index, image_file in enumerate(list_images):
             if len(image_file) != 1:
                 err = '%s output image not found or more than one file found.'
                 raise Exception(err % (image_file))
-            # Open niftis with nibabel
-            f_img = nib.load(image_file[0])
-            f_img_data = f_img.get_data()
-            # Draw
-            if len(f_img_data.shape) == 3:
-                data = f_img_data
-            elif len(f_img_data.shape) == 4:
-                data = f_img_data[:, :, :, f_img_data.shape[3]/2]
-            self.plot_images(fig, data, number_images, index)
+            images.append(image_file[0])
 
-        # Set footer and title
-        fig.tight_layout()
-        plt.figtext(0.5, 0.985, '-- GIF_Parcellation Pipeline PDF report --',
-                    horizontalalignment='center', fontsize=10)
-        bottom_page = 'Date: %s -- page 1/2 -- PDF generated by \
-TIG laboratory at UCL, London' % str(date)
-        plt.figtext(0.5, 0.02, bottom_page, horizontalalignment='center',
-                    fontsize=8)
-
-        # Writing Figure
-        plt.show()
-        fig.savefig(pdf_page1,
-                    transparent=True,
-                    orientation='portrait',
-                    dpi=100)
-        plt.close(fig)
+        labels = {
+            '0': 'Bias Corrected',
+            '1': 'Brain',
+            '2': 'Labels',
+            '3': 'Segmentation',
+            '4': 'tiv',
+            '5': 'prior'
+        }
+        cmap = {
+            '0': 'gray',
+            '1': 'gray',
+            '2': None,
+            '3': 'gray',
+            '4': 'gray',
+            '5': None
+        }
+        self.plot_images_page(pdf_pages['1'], 1, images,
+                              'GIF_Parcellation Pipeline',
+                              image_labels=labels, cmap=cmap)
 
         # Page 2
-        print volumes
         if len(volumes) != 1:
             err = '%s output csv file with information on volumes not found \
 or more than one file found.'
             raise Exception(err % (volumes))
         with open(volumes[0], 'rb') as csvfileread:
             csvreader = csv.reader(csvfileread, delimiter=',')
-            list_labels_name = csvreader.next()
-            list_labels_volume = csvreader.next()
+            li_name = csvreader.next()
+            li_volume = csvreader.next()
 
-        cell_text = []
-        for ind in range(len(list_labels_volume)):
-            txt = smaller_str(list_labels_name[ind].strip().replace('"', ''),
-                              size=30)
-            cell_text.append([txt, "%.2f" % float(list_labels_volume[ind])])
+        di_stats = OrderedDict()
+        for index, name in enumerate(li_name):
+            di_stats[name] = li_volume[index]
 
-        # Make the table
-        fig = plt.figure(2, figsize=(7.5, 10))
-        nb_vol = 47
-        for i in range(3):
-            ax = fig.add_subplot(1, 3, i+1)
-            ax.xaxis.set_visible(False)
-            ax.yaxis.set_visible(False)
-            ax.axis('off')
-            the_table = ax.table(cellText=cell_text[nb_vol*i:nb_vol*(i+1)],
-                                 colColours=[(0.8, 0.4, 0.4), (1.0, 1.0, 0.4)],
-                                 colLabels=['Label name', 'Volume'],
-                                 colWidths=[0.8, 0.32],
-                                 loc='center',
-                                 rowLoc='left',
-                                 colLoc='left',
-                                 cellLoc='left')
-
-            the_table.auto_set_font_size(False)
-            the_table.set_fontsize(6)
-
-        # Set footer and title
-        plt.figtext(0.5, 0.95,
-                    '-- Volumes computed by GIF_Parcellation Pipeline --',
-                    horizontalalignment='center', fontsize=10)
-        bottom_page = 'Date: %s -- page 2/2 -- PDF generated by \
-TIG laboratory at UCL, London' % str(date)
-        plt.figtext(0.5, 0.02, bottom_page, horizontalalignment='center',
-                    fontsize=8)
-
-        # Writing Figure
-        plt.show()
-        fig.savefig(pdf_page2,
-                    transparent=True,
-                    orientation='portrait',
-                    dpi=300)
-        plt.close(fig)
+        self.plot_stats_page(pdf_pages['2'], 2, di_stats,
+                             'Volumes computed by GIF_Parcellation',
+                             columns_header=['Label Name', 'Volume'])
 
         # Join the two pages for the PDF:
-        cmd = 'gs -q -sPAPERSIZE=letter -dNOPAUSE -dBATCH \
--sDEVICE=pdfwrite -sOutputFile=%s %s %s' % (pdf_final, pdf_page1, pdf_page2)
-        self.time_writer('INFO:saving final PDF: %s ' % cmd)
-        os.system(cmd)
-
-
-def smaller_str(str_option, size=10, end=False):
-    """Method to shorten a string into a smaller size.
-
-    :param str_option: string to shorten
-    :param size: size of the string to keep (default: 10 characters)
-    :param end: keep the end of the string visible (default beginning)
-    :return: shortened string
-    """
-    if len(str_option) > size:
-        if end:
-            return '...%s' % (str_option[-size:])
-        else:
-            return '%s...' % (str_option[:size])
-    else:
-        return str_option
+        self.merge_pdf_pages(pdf_pages, self.pdf_final)
 
 
 if __name__ == '__main__':
