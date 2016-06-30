@@ -11,7 +11,6 @@ Purpose:        Extract the vessel from the T1/MPRAGE scan
 import os
 import sys
 import nibabel as nib
-import subprocess as sb
 from dax import XnatUtils, spiders, ScanSpider
 
 __author__ = "Benjamin Yvernault"
@@ -86,14 +85,7 @@ class Spider_Vessel_Extraction(ScanSpider):
         self.output = ''
         self.pdfpath = ''
         self.pixel_size = DEFAULT_PIXEL_SIZE
-        self.exe_path = exe_path
-        # Print version for Niftyreg - GIFi
-        pversion = sb.Popen([exe_path, '--version'],
-                            stdout=sb.PIPE,
-                            stderr=sb.PIPE)
-        nve_version, _ = pversion.communicate()
-        self.time_writer('niftkVesselExtractor version: %s' %
-                         (nve_version.strip()))
+        self.exe_path = self.check_executable(exe_path, 'niftkVesselExtractor')
 
     def get_voxel_size(self):
         """Method to get the voxel size from XNAT if define using default value if not.
