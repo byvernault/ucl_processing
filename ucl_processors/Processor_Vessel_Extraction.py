@@ -30,7 +30,8 @@ DEFAULT_WALLTIME = '01:00:00'
 DEFAULT_MEM = 2048
 DEFAULT_PIXEL_SIZE = '0.775438'
 DEFAULT_SCAN_TYPES = ['Ax Inhance 3D MRV', 'Ax Inhance 3D MRA']
-DEFAULT_VESSEL_PATH = 'niftkVesselExtractor'
+DEFAULT_VESSEL_PATH = '/share/apps/cmic/niftk/niftk-16.4.1/\
+bin/niftkVesselExtractor'
 
 # Format for the spider command line
 SPIDER_FORMAT = """python {spider} \
