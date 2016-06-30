@@ -26,7 +26,7 @@ __modifications__ = """2016-03-15 14:56 - Adding working_dir options
 """
 
 
-GIF_CMD = """python {exe_path} \
+GIF_CMD = """{exe_path} \
 -i {input} \
 -o {output} \
 -d {db_xml} \
