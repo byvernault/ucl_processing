@@ -12,10 +12,9 @@ LOGGER = logging.getLogger('dax')
 DEFAULT_TPM_PATH = '/tmp/dcm2nii_temp/'
 DEFAULT_MODULE_NAME = 'dcm2nii'
 DEFAULT_TEXT_REPORT = 'ERROR/WARNING for dcm2nii :\n'
-DCM2NII_PATH = 'dcm2nii'
-DCMDJPEG_PATH = 'dcmdjpeg'
 DCM2NII_CMD = '''{dcm2nii} -a n -e n -d n -g y -f n -n y -p n \
 -v y -x n -r n {dicom}'''
+DCMDJPEG_TEMPLATE = """{dcmdjpeg} {original_dcm} {new_dcm}"""
 
 
 class Module_dcm2nii(ScanModule):
@@ -23,8 +22,10 @@ class Module_dcm2nii(ScanModule):
 
     def __init__(self, mod_name=DEFAULT_MODULE_NAME,
                  directory=DEFAULT_TPM_PATH, email=None,
-                 text_report=DEFAULT_TEXT_REPORT, zip_dicoms=True,
-                 dcm2niipath=DCM2NII_PATH, dcmdjpegpath=DCMDJPEG_PATH):
+                 text_report=DEFAULT_TEXT_REPORT,
+                 zip_dicoms=False,
+                 dcm2niipath='dcm2nii',
+                 dcmdjpegpath='dcmdjpeg'):
         """init function overridden from base-class."""
         super(Module_dcm2nii, self).__init__(mod_name, directory, email,
                                              text_report=text_report)
@@ -74,22 +75,24 @@ delete it.' % self.directory)
             LOGGER.debug('no DICOM files')
         else:
             LOGGER.debug('downloading all DICOMs...')
-            scan_obj.resource('DICOM').get(self.directory, extract=True)
-
-            dcm_dir = os.path.join(self.directory, 'DICOM')
-            self.set_dicom_list(dcm_dir)
-            if self.dicom_paths:
-                # Check for duplicate dicoms:
-                self.check_duplicate_slices_dicom(scan_info)
+            self.dicom_paths = XnatUtils.download_files_from_obj(
+                                    self.directory,
+                                    scan_obj.resource('DICOM'))
+            if not self.dicom_paths:
+                msg = """dcm2nii -- %s -- No proper DICOM found in \
+    resource DICOM on XNAT"""
+                LOGGER.error(msg % scan_info['scan_id'])
+                msg = 'No proper DICOM found in resource DICOM on XNAT'
+                self.log_warning_error(msg, scan_info, error=True)
+            else:
                 # convert dcm to nii
-                conversion_status = self.dcm2nii(self.dicom_paths[0])
-
-                if not conversion_status:
+                dcm_dir = os.path.dirname(self.dicom_paths[0])
+                if not self.dcm2nii(self.dicom_paths[0]):
                     # Convert dcm via dcmdjpeg
-                    self.dcmdjpeg(dcm_dir)
+                    dicom_paths_djpeg = self.dcmdjpeg()
                     # try again dcm2nii
-                    dcm_fpath = os.path.join(dcm_dir, 'final_1.dcm')
-                    conversion_status = self.dcm2nii(dcm_fpath)
+                    self.dcm2nii(dicom_paths_djpeg[0])
+                    dcm_dir = os.path.dirname(dicom_paths_djpeg[0])
 
                 # Check if Nifti created:
                 nifti_list = [f for f in os.listdir(dcm_dir)
@@ -102,39 +105,9 @@ dicom with dcmdjpeg ) conversion failure" % scan_info['scan_id'])
                 else:
                     # UPLOADING THE RESULTS
                     self.upload_converted_images(dcm_dir, scan_obj, scan_info)
-            else:
-                LOGGER.error('''dcm2nii -- %s -- No proper DICOM found in \
-resource DICOM on XNAT''' % scan_info['scan_id'])
-                self.log_warning_error('No proper DICOM found in resource DICOM \
-on XNAT', scan_info, error=True)
 
             # clean tmp folder
-            self.clean_directory()
-
-    @staticmethod
-    def is_dicom(fpath):
-        """check if the file is a DICOM medical data.
-
-        :param fpath: path of the file
-        :return boolean: true if it's a DICOM, false otherwise
-        """
-        file_call = '''file {fpath}'''.format(fpath=fpath)
-        output = sb.check_output(file_call.split())
-        if 'dicom' in output.lower():
-            return True
-
-        return False
-
-    def set_dicom_list(self, directory):
-        """get the list of DICOMs file from the directory.
-
-        :param directory: directory containing the DICOM files.
-        """
-        fnames = os.listdir(directory)
-        for fname in fnames:
-            fpath = os.path.join(directory, fname)
-            if self.is_dicom(fpath):
-                self.dicom_paths.append(fpath)
+            # self.clean_directory()
 
     def dcm2nii(self, dicom_path):
         """convert dicom to nifti using dcm2nii."""
@@ -149,16 +122,26 @@ on XNAT', scan_info, error=True)
 
         return True
 
-    def dcmdjpeg(self, dcm_dir):
-        """converting the dicom to jpeg dicoms."""
+    def dcmdjpeg(self):
+        """Decompress the dicom from jpeg.
+
+        :return: list of dicoms
+        """
         LOGGER.debug('run dcmdjpeg on the DICOMs.')
-        for number, dicoms in enumerate(os.listdir(dcm_dir)):
-            dcmdjpeg_cmd = '''{dcmdjpeg} {original_dcm} {new_dcm}'''.format(
-                    dcmdjpeg=self.dcmdjpeg_exe,
-                    original_dcm=os.path.join(dcm_dir, dicoms),
-                    new_dcm=os.path.join(dcm_dir, 'final_'+str(number)+'.dcm'))
+        dicom_paths = []
+        dcm_dir = os.path.join(os.path.dirname(self.dicom_paths[0]),
+                               'DCMDJPEGEDs')
+        for dicom in self.dicom_paths:
+            root, ext = os.path.splitext(dicom)
+            dcm_p = os.path.join(dcm_dir, os.path.basename(root))
+            new_dicom = "%s_dcmdjpeged.%s" % (dcm_p, ext)
+            dcmdjpeg_cmd = DCMDJPEG_TEMPLATE.format(
+                                dcmdjpeg=self.dcmdjpeg,
+                                original_dcm=dicom,
+                                new_dcm=new_dicom)
             os.system(dcmdjpeg_cmd)
-            os.remove(os.path.join(dcm_dir, dicoms))
+            dicom_paths.append(new_dicom)
+        return dicom_paths
 
     def upload_converted_images(self, dcm_dir, scan_obj, scan_info):
         """upload the images after checking them."""
