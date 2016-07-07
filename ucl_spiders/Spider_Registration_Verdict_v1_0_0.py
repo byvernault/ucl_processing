@@ -72,7 +72,7 @@ def parse_args():
         --argsRegAladin : arguments for Reg Aladin.
           Default: -maxit 15 -ln 4 -lp 4 -interp 1
         --regResample : path to reg_resample's executable
-        --argRegResample : arguments for reg_f3d.
+        --argRegResample : arguments for reg_resample.
           Default: -ln 4 -lp 4 -jl 0.1 -be 0.05 -maxit 250 -lncc 0 5.0 -sx 2.5
         --openmp_core : number of core use by reg_aladin. Default: one
 
@@ -413,9 +413,7 @@ def join_nifti_3Ds_4D(li_nii, nifti_path):
         else:
             data[:, :, :, index] = f_img_data
     nii_4d = nib.Nifti1Image(data, affine=f_img.affine)
-    nii_file = '%s_%d.nii' % (os.path.splitext(nifti_path)[0],
-                              index)
-    nib.save(nii_4d, nii_file)
+    nib.save(nii_4d, nifti_path)
 
 
 def open_nifti(nifti_path):
@@ -465,7 +463,10 @@ def write_dicom(pixel_array, filename, ds_copy, ds_ori, volume_number,
 
     # Other tags to set
     ds.SeriesNumber = series_number
-    ds.SeriesDescription = ds_ori.SeriesDescription + ' reg_f3d'
+    if SeriesDescription not in ds:
+        ds.SeriesDescription = stype + ' registered'
+    else:
+        ds.SeriesDescription = ds_ori.SeriesDescription + ' registered'
     sop_uid = sop_id + str(datetime.datetime.now()).replace('-', '')\
                                                    .replace(':', '')\
                                                    .replace('.', '')\
@@ -501,14 +502,14 @@ def convert_nifti_2_dicoms(nifti_path, dcm_targets, dicom_source,
     :return: None
     """
     if not os.path.isfile(nifti_path):
-        raise Exception("File %s not found after reg_f3d." % nifti_path)
+        raise Exception("File %s not found after registration." % nifti_path)
     # Load image from NIFTI
     f_img = nib.load(nifti_path)
     f_img_data = f_img.get_data()
 
     # Load dicom headers
     if not os.path.isfile(dicom_source):
-        err = "DICOM File %s not found after reg_f3d."
+        err = "DICOM File %s not found after registration."
         raise Exception(err % dicom_source)
     adc_dcm_obj = dicom.read_file(dicom_source)
 
