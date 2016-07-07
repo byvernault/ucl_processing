@@ -383,5 +383,5 @@ def check_executable(executable, name):
                         stdout=sb.PIPE,
                         stderr=sb.PIPE)
     nve_version, _ = pversion.communicate()
-    print ('%s version: %s' % (name, nve_version.strip().split('\n')[0]))
+    LOGGER.debug('%s version: %s' % (name, nve_version.strip().split('\n')[0]))
     return executable
