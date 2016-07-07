@@ -107,7 +107,8 @@ dicom with dcmdjpeg ) conversion failure" % scan_info['scan_id'])
                     self.upload_converted_images(dcm_dir, scan_obj, scan_info)
 
             # clean tmp folder
-            # self.clean_directory()
+            raw_input('...')
+            self.clean_directory()
 
     def dcm2nii(self, dicom_path):
         """convert dicom to nifti using dcm2nii."""
@@ -277,5 +278,5 @@ def check_executable(executable, name):
                         stdout=sb.PIPE,
                         stderr=sb.PIPE)
     nve_version, _ = pversion.communicate()
-    print ('%s version: %s' % (name, nve_version.strip()))
+    print ('%s version: %s' % (name, nve_version.strip().split('\n')[0]))
     return executable

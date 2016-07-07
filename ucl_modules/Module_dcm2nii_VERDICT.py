@@ -18,8 +18,8 @@ DCM2NII_TEMPLATE = """{dcm2nii} \
 {dicom}"""
 DCMDJPEG_TEMPLATE = """{dcmdjpeg} {original_dcm} {new_dcm}"""
 DEFAULT_VERDICT_TEMPLATE = """
-addpath(genpath('/'))
-dcm2niiverdict({dcm_file}, {nii_file})
+addpath(genpath('/Users/byvernault/home-local/ucl-projects/Verdict/dcm2VERDICT/'))
+dcm2niiverdict('{dcm_file}', '{nii_file}')
 """
 VERDICT_TYPE = ["SWITCH DB TO YES b3000_80",
                 "b3000_80",
@@ -100,6 +100,35 @@ Could not delete it.' % self.directory)
 
         return True
 
+    @staticmethod
+    def is_dicom(fpath):
+        """check if the file is a DICOM medical data.
+
+        :param fpath: path of the file
+        :return boolean: true if it's a DICOM, false otherwise
+        """
+        file_call = '''file {fpath}'''.format(fpath=fpath)
+        output = sb.check_output(file_call.split())
+        if 'dicom' in output.lower():
+            return True
+
+        return False
+
+    def get_dicom_list(self, directory):
+        """get the list of DICOMs file from the directory.
+
+        :param directory: directory containing the DICOM files.
+        :return list(): list of filepaths that are dicoms in directory
+        """
+        fnames = os.listdir(directory)
+        dicom_paths = list()
+        for fname in fnames:
+            fpath = os.path.join(directory, fname)
+            if self.is_dicom(fpath):
+                dicom_paths.append(fpath)
+
+        return dicom_paths
+
     def run(self, scan_info, scan_obj):
         """run function to convert dicom to parrec to nifti and upload data.
 
@@ -114,6 +143,14 @@ Could not delete it.' % self.directory)
             self.dicom_paths = XnatUtils.download_files_from_obj(
                                     self.directory,
                                     scan_obj.resource('DICOM'))
+            if len(self.dicom_paths) == 1 and \
+               self.dicom_paths[0].endswith('.zip'):
+                dcm_dir = os.path.dirname(self.dicom_paths[0])
+                os.system('unzip -d %s -j %s > /dev/null'
+                          % (dcm_dir, self.dicom_paths[0]))
+                os.remove(self.dicom_paths[0])
+                self.dicom_paths = self.get_dicom_list(dcm_dir)
+
             if not self.dicom_paths:
                 msg = """dcm2nii -- %s -- No proper DICOM found in \
     resource DICOM on XNAT"""
@@ -162,6 +199,7 @@ Could not delete it.' % self.directory)
 
         :return: folder containing the dicom and the nifti(s) / bval / bvec
         """
+        LOGGER.debug('convert dcm to nii using verdict...')
         for dicom in self.dicom_paths:
             nii_file = "%s.%s" % (os.path.splitext(dicom)[0], 'nii')
             mat_lines = DEFAULT_VERDICT_TEMPLATE.format(dcm_file=dicom,
@@ -171,6 +209,9 @@ Could not delete it.' % self.directory)
             with open(matlab_script, "w") as f:
                 f.writelines(mat_lines)
             XnatUtils.run_matlab(matlab_script)
+        os.remove(matlab_script)  # remove matlab script
+        matlab_log = '%s_outlog.log' % os.path.splitext(matlab_script)[0]
+        os.remove(matlab_log)  # remove matlab log file
         return os.path.dirname(self.dicom_paths[0])
 
     def dcm2nii(self, dicom_path):
@@ -181,7 +222,7 @@ Could not delete it.' % self.directory)
         """
         LOGGER.debug('convert dcm to nii...')
         dcm2nii_cmd = DCM2NII_TEMPLATE.format(
-                            dcm2nii=self.dcm2nii,
+                            dcm2nii=self.dcm2niipath,
                             dicom=dicom_path)
         try:
             sb.check_output(dcm2nii_cmd.split())
@@ -205,7 +246,7 @@ Could not delete it.' % self.directory)
             dcm_p = os.path.join(dcm_dir, os.path.basename(root))
             new_dicom = "%s_dcmdjpeged.%s" % (dcm_p, ext)
             dcmdjpeg_cmd = DCMDJPEG_TEMPLATE.format(
-                                dcmdjpeg=self.dcmdjpeg,
+                                dcmdjpeg=self.dcmdjpegpath,
                                 original_dcm=dicom,
                                 new_dcm=new_dicom)
             os.system(dcmdjpeg_cmd)
@@ -342,5 +383,5 @@ def check_executable(executable, name):
                         stdout=sb.PIPE,
                         stderr=sb.PIPE)
     nve_version, _ = pversion.communicate()
-    print ('%s version: %s' % (name, nve_version.strip()))
+    print ('%s version: %s' % (name, nve_version.strip().split('\n')[0]))
     return executable
