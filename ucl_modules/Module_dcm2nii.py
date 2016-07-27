@@ -107,7 +107,6 @@ dicom with dcmdjpeg ) conversion failure" % scan_info['scan_id'])
                     self.upload_converted_images(dcm_dir, scan_obj, scan_info)
 
             # clean tmp folder
-            raw_input('...')
             self.clean_directory()
 
     def dcm2nii(self, dicom_path):
