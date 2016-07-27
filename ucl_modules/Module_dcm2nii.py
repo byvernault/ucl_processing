@@ -137,7 +137,7 @@ dicom with dcmdjpeg ) conversion failure" % scan_info['scan_id'])
             dcm_p = os.path.join(dcm_dir, os.path.basename(root))
             new_dicom = "%s_dcmdjpeged.%s" % (dcm_p, ext)
             dcmdjpeg_cmd = DCMDJPEG_TEMPLATE.format(
-                                dcmdjpeg=self.dcmdjpeg,
+                                dcmdjpeg=self.dcmdjpeg_exe,
                                 original_dcm=dicom,
                                 new_dcm=new_dicom)
             os.system(dcmdjpeg_cmd)
@@ -197,7 +197,8 @@ dicom with dcmdjpeg ) conversion failure" % scan_info['scan_id'])
                 if os.path.isfile(bval_fpath) and os.path.isfile(bvec_fpath):
                     os.remove(bval_fpath)
                     os.remove(bvec_fpath)
-                print '   --> more than one dicom file, zipping dicoms.'
+                LOGGER.debug('   --> more than one \
+dicom files, zipping dicoms.')
                 fzip = 'dicoms.zip'
                 initdir = os.getcwd()
                 # Zip all the files in the directory
@@ -208,7 +209,7 @@ dicom with dcmdjpeg ) conversion failure" % scan_info['scan_id'])
                 os.chdir(initdir)
                 # upload
                 if os.path.exists(fzip_path):
-                    print '   --> uploading zip dicoms'
+                    LOGGER.debug('   --> uploading zip dicoms')
                     scan_obj.resource('DICOM').delete()
                     scan_obj.resource('DICOM').put_zip(fzip_path,
                                                        overwrite=True,
