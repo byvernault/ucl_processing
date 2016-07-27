@@ -16,7 +16,7 @@ DEFAULT_TEXT_REPORT = 'ERROR/WARNING for dcm2nii_VERDICT :\n'
 DCM2NII_TEMPLATE = """{dcm2nii} \
 -a n -e n -d n -g y -f n -n y -p n -v y -x n -r n \
 {dicom}"""
-DCMDJPEG_TEMPLATE = """{dcmdjpeg} {original_dcm} {new_dcm}"""
+DCMDJPEG_TEMPLATE = """{dcmdjpeg} {original_dcm} {new_dcm} > /dev/null"""
 DEFAULT_VERDICT_TEMPLATE = """
 addpath(genpath('/Users/byvernault/home-local/ucl-projects/Verdict/dcm2VERDICT/'))
 dcm2niiverdict('{dcm_file}', '{nii_file}')
@@ -241,6 +241,8 @@ Could not delete it.' % self.directory)
         dicom_paths = []
         dcm_dir = os.path.join(os.path.dirname(self.dicom_paths[0]),
                                'DCMDJPEGEDs')
+        if not os.path.exists(dcm_dir):
+            os.path.makedirs(dcm_dir)
         for dicom in self.dicom_paths:
             root, ext = os.path.splitext(dicom)
             dcm_p = os.path.join(dcm_dir, os.path.basename(root))
