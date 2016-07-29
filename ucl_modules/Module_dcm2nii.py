@@ -14,7 +14,7 @@ DEFAULT_MODULE_NAME = 'dcm2nii'
 DEFAULT_TEXT_REPORT = 'ERROR/WARNING for dcm2nii :\n'
 DCM2NII_CMD = '''{dcm2nii} -a n -e n -d n -g y -f n -n y -p n \
 -v y -x n -r n {dicom}'''
-DCMDJPEG_TEMPLATE = """{dcmdjpeg} {original_dcm} {new_dcm}"""
+DCMDJPEG_TEMPLATE = """{dcmdjpeg} {original_dcm} {new_dcm} > /dev/null"""
 
 
 class Module_dcm2nii(ScanModule):
@@ -87,6 +87,19 @@ delete it.' % self.directory)
             else:
                 # convert dcm to nii
                 dcm_dir = os.path.dirname(self.dicom_paths[0])
+                # ZIP the DICOM if more than one
+                if len(self.dicom_paths) > 1 and self.zip_dicoms:
+                    self.zipping_dicoms(scan_obj, dcm_dir)
+
+                # if only one DICOM and it's a zip, unzip
+                if len(self.dicom_paths) == 1 and \
+                   self.dicom_paths[0].endswith('.zip'):
+                    dcm_dir = os.path.dirname(self.dicom_paths[0])
+                    os.system('unzip -d %s -j %s > /dev/null'
+                              % (dcm_dir, self.dicom_paths[0]))
+                    os.remove(self.dicom_paths[0])
+                    self.dicom_paths = self.get_dicom_list(dcm_dir)
+
                 if not self.dcm2nii(self.dicom_paths[0]):
                     # Convert dcm via dcmdjpeg
                     dicom_paths_djpeg = self.dcmdjpeg()
@@ -108,6 +121,31 @@ dicom with dcmdjpeg ) conversion failure" % scan_info['scan_id'])
 
             # clean tmp folder
             self.clean_directory()
+
+    @staticmethod
+    def zipping_dicoms(scan_obj, dcm_dir):
+        """Zipping the dicoms.
+
+        :param scan_obj: scan pyxnat object
+        :param dcm_dir: folder containing the dicoms
+        """
+        LOGGER.debug('   --> more than one \
+dicom files, zipping dicoms.')
+        fzip = 'dicoms.zip'
+        initdir = os.getcwd()
+        # Zip all the files in the directory
+        os.chdir(dcm_dir)
+        os.system('zip -r '+fzip+' * > /dev/null')
+        fzip_path = os.path.join(dcm_dir, fzip)
+        # return to the initial directory:
+        os.chdir(initdir)
+        # upload
+        if os.path.exists(fzip_path):
+            LOGGER.debug('   --> uploading zip dicoms')
+            scan_obj.resource('DICOM').delete()
+            scan_obj.resource('DICOM').put_zip(fzip_path,
+                                               overwrite=True,
+                                               extract=False)
 
     def dcm2nii(self, dicom_path):
         """convert dicom to nifti using dcm2nii."""
@@ -131,6 +169,8 @@ dicom with dcmdjpeg ) conversion failure" % scan_info['scan_id'])
         dicom_paths = []
         dcm_dir = os.path.join(os.path.dirname(self.dicom_paths[0]),
                                'DCMDJPEGEDs')
+        if not os.path.exists(dcm_dir):
+            os.path.makedirs(dcm_dir)
         for dicom in self.dicom_paths:
             root, ext = os.path.splitext(dicom)
             dcm_p = os.path.join(dcm_dir, os.path.basename(root))
@@ -187,32 +227,6 @@ dicom with dcmdjpeg ) conversion failure" % scan_info['scan_id'])
                 XnatUtils.upload_files_to_obj(nifti_list,
                                               scan_obj.resource('NIFTI'),
                                               remove=True)
-
-            # ZIP the DICOM if more than one
-            if len(self.dicom_paths) > 1 and self.zip_dicoms:
-                # Remove the files created before zipping:
-                for nii_file in nifti_list:
-                    os.remove(nii_file)
-                if os.path.isfile(bval_fpath) and os.path.isfile(bvec_fpath):
-                    os.remove(bval_fpath)
-                    os.remove(bvec_fpath)
-                LOGGER.debug('   --> more than one \
-dicom files, zipping dicoms.')
-                fzip = 'dicoms.zip'
-                initdir = os.getcwd()
-                # Zip all the files in the directory
-                os.chdir(dcm_dir)
-                os.system('zip -r '+fzip+' * > /dev/null')
-                fzip_path = os.path.join(dcm_dir, fzip)
-                # return to the initial directory:
-                os.chdir(initdir)
-                # upload
-                if os.path.exists(fzip_path):
-                    LOGGER.debug('   --> uploading zip dicoms')
-                    scan_obj.resource('DICOM').delete()
-                    scan_obj.resource('DICOM').put_zip(fzip_path,
-                                                       overwrite=True,
-                                                       extract=False)
 
             # more than one NIFTI uploaded
             if len(nifti_list) > 1:
