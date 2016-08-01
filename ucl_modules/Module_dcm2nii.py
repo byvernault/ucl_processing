@@ -199,7 +199,7 @@ dicom files, zipping dicoms.')
         dcm_dir = os.path.join(os.path.dirname(self.dicom_paths[0]),
                                'DCMDJPEGEDs')
         if not os.path.exists(dcm_dir):
-            os.path.makedirs(dcm_dir)
+            os.makedirs(dcm_dir)
         for dicom in self.dicom_paths:
             root, ext = os.path.splitext(dicom)
             dcm_p = os.path.join(dcm_dir, os.path.basename(root))
