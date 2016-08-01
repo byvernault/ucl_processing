@@ -123,6 +123,35 @@ dicom with dcmdjpeg ) conversion failure" % scan_info['scan_id'])
             self.clean_directory()
 
     @staticmethod
+    def is_dicom(fpath):
+        """check if the file is a DICOM medical data.
+
+        :param fpath: path of the file
+        :return boolean: true if it's a DICOM, false otherwise
+        """
+        file_call = '''file {fpath}'''.format(fpath=fpath)
+        output = sb.check_output(file_call.split())
+        if 'dicom' in output.lower():
+            return True
+
+        return False
+
+    def get_dicom_list(self, directory):
+        """get the list of DICOMs file from the directory.
+
+        :param directory: directory containing the DICOM files.
+        :return list(): list of filepaths that are dicoms in directory
+        """
+        fnames = os.listdir(directory)
+        dicom_paths = list()
+        for fname in fnames:
+            fpath = os.path.join(directory, fname)
+            if self.is_dicom(fpath):
+                dicom_paths.append(fpath)
+
+        return dicom_paths
+
+    @staticmethod
     def zipping_dicoms(scan_obj, dcm_dir):
         """Zipping the dicoms.
 
