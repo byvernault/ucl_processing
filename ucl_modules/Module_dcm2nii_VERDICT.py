@@ -13,12 +13,13 @@ LOGGER = logging.getLogger('dax')
 DEFAULT_TPM_PATH = '/tmp/dcm2nii_temp/'
 DEFAULT_MODULE_NAME = 'dcm2nii_VERDICT'
 DEFAULT_TEXT_REPORT = 'ERROR/WARNING for dcm2nii_VERDICT :\n'
+DEFAULT_MATLAB_CODE = '/home/dax/scripts/matlab/dcm2VERDICT'
 DCM2NII_TEMPLATE = """{dcm2nii} \
 -a n -e n -d n -g y -f n -n y -p n -v y -x n -r n \
 {dicom}"""
 DCMDJPEG_TEMPLATE = """{dcmdjpeg} {original_dcm} {new_dcm} > /dev/null"""
 DEFAULT_VERDICT_TEMPLATE = """
-addpath(genpath('/Users/byvernault/home-local/ucl-projects/Verdict/dcm2VERDICT/'))
+addpath(genpath('{matlab_code}'))
 dcm2niiverdict('{dcm_file}', '{nii_file}')
 """
 VERDICT_TYPE = ["SWITCH DB TO YES b3000_80",
@@ -216,7 +217,8 @@ Could not delete it.' % self.directory)
         LOGGER.debug('convert dcm to nii using verdict...')
         for dicom in self.dicom_paths:
             nii_file = "%s.%s" % (os.path.splitext(dicom)[0], 'nii')
-            mat_lines = DEFAULT_VERDICT_TEMPLATE.format(dcm_file=dicom,
+            mat_lines = DEFAULT_VERDICT_TEMPLATE.format(matlab_code=DEFAULT_MATLAB_CODE,
+                                                        dcm_file=dicom,
                                                         nii_file=nii_file)
             matlab_script = os.path.join(os.path.dirname(dicom),
                                          'run_dcm2niiverdict.m')
