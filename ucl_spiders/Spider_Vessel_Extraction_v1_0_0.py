@@ -316,6 +316,8 @@ Using default.")
 
 if __name__ == '__main__':
     ARGS = parse_args()
+    # Set environment variable for fixing flips
+    os.environ["NIFTK_DRC_ANALYZE"] = 'ON'
     # generate spider object:
     spider_obj = Spider_Vessel_Extraction(spider_path=sys.argv[0],
                                           jobdir=ARGS.temp_dir,
