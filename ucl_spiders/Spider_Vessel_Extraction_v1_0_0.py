@@ -318,6 +318,7 @@ if __name__ == '__main__':
     ARGS = parse_args()
     # Set environment variable for fixing flips
     os.environ["NIFTK_DRC_ANALYZE"] = 'ON'
+
     # generate spider object:
     spider_obj = Spider_Vessel_Extraction(spider_path=sys.argv[0],
                                           jobdir=ARGS.temp_dir,
@@ -335,6 +336,10 @@ if __name__ == '__main__':
 
     # Pre-run method to download data from XNAT
     spider_obj.pre_run()
+
+    # Check the value:
+    spider_obj.time_writer("NIFTK_DRC_ANALYZE set to %s"
+                           % os.environ["NIFTK_DRC_ANALYZE"])
 
     # Run method
     spider_obj.run()
