@@ -158,18 +158,6 @@ class Spider_Registration_Verdict(SessionSpider):
         xnat = XnatUtils.get_interface(host=self.host,
                                        user=self.user,
                                        pwd=self.pwd)
-        # Download one DICOM
-        dcm_dir = XnatUtils.makedir(os.path.join(input_folder, 'DICOM'),
-                                    subdir=False)
-        scan = XnatUtils.select_obj(xnat,
-                                    self.xnat_project,
-                                    self.xnat_subject,
-                                    self.xnat_session,
-                                    self.scans_id[0])
-        sdcm_obj = scan.resource('DICOM')
-        self.time_writer('Downloading DICOM for scan ID %s ...'
-                         % self.scans_id[0])
-        self.dicom = XnatUtils.download_file_from_obj(dcm_dir, sdcm_obj)
 
         # Download NIFTIs
         index = 1
@@ -187,6 +175,13 @@ class Spider_Registration_Verdict(SessionSpider):
             snii_obj = scan.resource('NIFTI')
             scan_info['4D'] = XnatUtils.download_file_from_obj(scan_dir,
                                                                snii_obj)
+            # Download DICOMs
+            sdcm_obj = scan.resource('DICOM')
+            self.time_writer('Downloading DICOM for scan ID %s ...'
+                             % scan_id)
+
+            scan_info['dicom'] = XnatUtils.download_file_from_obj(scan_dir,
+                                                                  sdcm_obj)
             scan_info['type'] = scan.attrs.get('type')
             scan_info['ID'] = scan_id
             if 'b3000' in scan_info['type'].lower() and \
@@ -204,7 +199,8 @@ class Spider_Registration_Verdict(SessionSpider):
     def run(self):
         """Method running the process for the spider on the inputs data."""
         output_folder = XnatUtils.makedir(os.path.join(self.jobdir, 'outputs'))
-        dcm_folder = XnatUtils.makedir(os.path.join(output_folder, 'DICOM'))
+        osirix_folder = XnatUtils.makedir(os.path.join(output_folder,
+                                                       'OsiriX'))
 
         for i in range(1, len(self.acquisitions.keys()) + 1):
             for index, scan_info in enumerate(self.acquisitions[i]):
@@ -228,59 +224,84 @@ class Spider_Registration_Verdict(SessionSpider):
                     self.acquisitions[i][index]['reg'] = nii_reg
 
                     # Generate DICOM version of the reg_f3d results:
-                    convert_nifti_2_dicoms(nii_reg,
-                                           self.dicom,
-                                           self.dicom,
-                                           dcm_folder,
-                                           scan_info['type'],
-                                           label=("%s_%s_reg"
-                                                  % (scan_info['ID'],
-                                                     scan_info['type'])))
-        shutil.move(self.dicom, dcm_folder)
+                    convert_nifti_2_dicoms(
+                        nii_reg,
+                        self.acquisitions[i][index-1]['dicom'],
+                        self.acquisitions[i][index]['dicom'],
+                        osirix_folder,
+                        scan_info['type'],
+                        label=("%s_%s_reg" % (scan_info['ID'],
+                                              scan_info['type'])))
+                else:
+                    ori_nii = self.acquisitions[i][index]['4D']
+                    self.acquisitions[i][index]['reg'] = ori_nii
+
+            shutil.move(self.acquisitions[i][0]['dicom'], osirix_folder)
+
+        # Generate big niftis
+        self.generate_big_nifti()
 
         # Make PDF
-        # self.make_pdf()
+        self.make_pdf()
 
         # Zip the DICOMs output:
-        """initdir = os.getcwd()
+        initdir = os.getcwd()
         # Zip all the files in the directory
-        zip_name = os.path.join(self.jobdir, 'outputs', 'OSIRIX', 'osirix.zip')
-        os.chdir(os.path.join(self.jobdir, 'outputs', 'OSIRIX'))
+        zip_name = os.path.join(self.jobdir, 'outputs', 'OsiriX', 'osirix.zip')
+        os.chdir(os.path.join(self.jobdir, 'outputs', 'OsiriX'))
         os.system('zip -r %s * > /dev/null' % zip_name)
         # return to the initial directory:
-        os.chdir(initdir)"""
+        os.chdir(initdir)
 
     def finish(self):
         """Method to copy the results in dax.RESULTS_DIR."""
-        """out_dir = os.path.join(self.jobdir, 'outputs')
+        out_dir = os.path.join(self.jobdir, 'outputs')
         # Organise the outputs:
-        ala_dir = XnatUtils.makedir(os.path.join(out_dir, 'REG_ALA'))
-        aff_dir = XnatUtils.makedir(os.path.join(out_dir, 'AFF'))
-        reg_dir = XnatUtils.makedir(os.path.join(out_dir, 'REG_F3D'))
-        cpp_dir = XnatUtils.makedir(os.path.join(out_dir, 'CPP'))
-        # Copy files:
-        for scan_id, res_dict in self.sources.items():
-            for folder in ['REG_ALA', 'REG_F3D', 'AFF', 'CPP']:
-                old_path = glob.glob(os.path.join(out_dir, scan_id,
-                                                  folder, '*'))[0]
-                new_path = os.path.join(out_dir, folder)
-                shutil.copy(old_path, new_path)
-        # Zipping all the dicoms in the OSIRIX folder and keep the zip
-        zip_osirix = os.path.join(out_dir, 'OSIRIX', 'osirix.zip')
         results_dict = {'PDF': self.pdf_final,
-                        'ACQ1': ala_dir,
-                        'ACQ2': aff_dir,
-                        'OSIRIX': zip_osirix}
+                        'OsiriX': os.path.join(out_dir, 'OsiriX',
+                                               'osirix.zip')}
+        for i in range(1, len(self.acquisitions.keys()) + 1):
+            acq_dir = os.path.join(out_dir, 'ACQ%d' % i)
+            results_dict['ACQ%d' % i] = acq_dir
+
         # Upload data:
         self.upload_dict(results_dict)
-        self.end()"""
+        self.end()
 
     def make_pdf(self):
         """Method to make the PDF for the spider.
 
         :return: None
         """
-        print 'PDF'
+        pdf_pages = dict()
+        page_number = 1
+        pdf_title = 'Registration Verdict - acquisition %d'
+        list_slices = [3, 6, 9, 12]
+        slices = {'0': list_slices,
+                  '1': list_slices,
+                  '2': list_slices,
+                  '3': list_slices,
+                  '4': list_slices}
+        for i in range(1, len(self.acquisitions.keys()) + 1):
+            images = list()
+            labels = dict()
+            sorted_list = sorted(self.acquisitions[i],
+                                 key=lambda k: int(k['ID']))
+            for index, scan_info in enumerate(sorted_list):
+                labels[str(index)] = scan_info['type']
+                images.append(self.acquisitions[i][index]['reg'])
+
+            # Saved pages:
+            pdf_page = os.path.join(self.jobdir, 'registration_page_%d.pdf'
+                                                 % page_number)
+
+            self.plot_images_page(pdf_page, page_number, images,
+                                  pdf_title % (i+1), image_labels=labels,
+                                  slices=slices, volume_ind=0)
+            pdf_pages[page_number] = pdf_page
+            page_number += 1
+        # Merge pages:
+        self.merge_pdf_pages(pdf_pages, self.pdf_final)
 
     def register_nifti(self, source_info, target_info, output_folder,
                        acquisition_number):
@@ -296,15 +317,14 @@ class Spider_Registration_Verdict(SessionSpider):
         ala_dir = XnatUtils.makedir(os.path.join(output_folder, 'REG_ALA'))
         reg_dir = XnatUtils.makedir(os.path.join(output_folder, 'REG_RES'))
         b1tob0 = os.path.join(ala_dir, 'b1tob0.txt')
-        b0_nii = os.path.join(ala_dir, 'b0_reg.nii')
-        volume_niis = {0: b0_nii}
+        volume_niis = {0: source_info['3D'][0]}
         # Step 2:
         # Register each scan b0 to the previous one
         # (e.g: b3000 <- b2000)
         cmd = REG_ALADIN_CMD.format(exe_path=self.reg_aladin_exe,
                                     ref=target_info['3D'][0],
                                     flo=source_info['3D'][0],
-                                    res=b0_nii,
+                                    res=source_info['3D'][0],
                                     aff=b1tob0,
                                     args=self.args_reg_aladin)
         self.run_system_cmd(cmd)
@@ -332,37 +352,38 @@ class Spider_Registration_Verdict(SessionSpider):
         join_nifti_3Ds_4D(volume_niis, final_nii)
         return final_nii
 
-    def generate_big_nifti(self, nifti_path):
-        """Generate big nifti with all VERDICT acquisition files.
-
-        :param nifti_path: nifti path
-        """
+    def generate_big_nifti(self):
+        """Generate big nifti with all VERDICT acquisition files."""
         for i in range(1, len(self.acquisitions.keys()) + 1):
             f_img = nib.load(self.acquisitions[i][0]['4D'])
             f_img_data = f_img.get_data()
-            data = np.zeros(shape=(f_img_data.shape[0],
-                                   f_img_data.shape[1],
-                                   f_img_data.shape[2],
-                                   f_img_data.shape[3],
-                                   len(self.acquisitions[i])))
-            for index, scan_info in enumerate(self.acquisitions[i]):
-                if index == 0:
-                    key = '4D'
-                else:
-                    key = 'reg'
+            data = np.zeros(
+                    shape=(f_img_data.shape[0],
+                           f_img_data.shape[1],
+                           f_img_data.shape[2],
+                           f_img_data.shape[3]*len(self.acquisitions[i])))
 
+            sorted_list = sorted(self.acquisitions[i],
+                                 key=lambda k: int(k['ID']))
+            for index, scan_info in enumerate(sorted_list):
                 # Open niftis with nibabel
-                f_img = nib.load(scan_info[key])
+                f_img = nib.load(scan_info['reg'])
                 f_img_data = f_img.get_data()
-                # Draw
-                data[:, :, :, :, index] = f_img_data
-                nii_5d = nib.Nifti1Image(data, affine=f_img.affine)
+
+                for vol in range(0, f_img_data.shape[3]):
+                    # Draw
+                    vol_index = index*f_img_data.shape[3] + vol
+                    data[:, :, :, vol_index] = f_img_data[:, :, :, vol]
+
+            nii_5d = nib.Nifti1Image(data, affine=f_img.affine)
             acq_dir = XnatUtils.makedir(os.path.join(self.jobdir,
                                                      'outputs',
-                                                     'ACQ%d' % index))
+                                                     'ACQ%d' % i))
             filename = '%s_acquisition%d.nii' % (self.xnat_session, index)
             nii_file = os.path.join(acq_dir, filename)
             nib.save(nii_5d, nii_file)
+            # gzip the nifti:
+            XnatUtils.gzip_file(nii_file)
 
 
 def split_nifti_4D_3Ds(nifti_path):
@@ -446,7 +467,7 @@ def write_dicom(pixel_array, filename, ds_copy, ds_ori, volume_number,
     :param volume_number: number of the volume being processed
     :param series_number: number of the series being processed
     :param sop_id: SOPInstanceUID for the DICOM
-    :param stype: type of the scan
+    :param stype: type for the scan
     """
     # Set to zero negatives values in the image:
     pixel_array[pixel_array < 0] = 0
@@ -468,14 +489,16 @@ def write_dicom(pixel_array, filename, ds_copy, ds_ori, volume_number,
     if 'SeriesDescription' not in ds:
         ds.SeriesDescription = stype + ' registered'
     else:
-        ds.SeriesDescription = ds_ori.SeriesDescription + ' registered'
+        ds.SeriesDescription = ds.SeriesDescription + ' registered'
     sop_uid = sop_id + str(datetime.datetime.now()).replace('-', '')\
                                                    .replace(':', '')\
                                                    .replace('.', '')\
                                                    .replace(' ', '')
     ds.SOPInstanceUID = sop_uid[:-1]
     ds.ProtocolName = ds_ori.ProtocolName
-    ds.InstanceNumber = volume_number+1
+    ds.InstanceNumber = volume_number
+    # Number of Frames:
+    del ds[0x0028, 0x0008]
 
     # Copy from T2 the orientation tags:
     for tag in TAGS_TO_COPY:
@@ -491,30 +514,36 @@ def write_dicom(pixel_array, filename, ds_copy, ds_ori, volume_number,
     ds.save_as(filename)
 
 
-def convert_nifti_2_dicoms(nifti_path, dcm_targets, dicom_source,
+def convert_nifti_2_dicoms(nifti_path, dcm_target, dicom_source,
                            output_folder, stype, label=None):
-    """Convert 4D niftis generated by reg_f3d into DICOM files.
+    """Convert 4D niftis into DICOM files.
 
     :param nifti_path: path to the nifti file
     :param dcm_targets: list of pydicom object from the target image for
                         header info
     :param dicom_source: one dicom file from the source for header info
     :param output_folder: folder where the DICOM files will be saved
-    :param stype: type of the scan
+    :param stype: type for the scan
     :param label: name for the output dicom files
     :return: None
     """
     if not os.path.isfile(nifti_path):
-        raise Exception("File %s not found after registration." % nifti_path)
+        raise Exception("NIFTY File %s not found." % nifti_path)
     # Load image from NIFTI
     f_img = nib.load(nifti_path)
     f_img_data = f_img.get_data()
 
     # Load dicom headers
     if not os.path.isfile(dicom_source):
-        err = "DICOM File %s not found after registration."
+        err = "DICOM File %s not found."
         raise Exception(err % dicom_source)
-    adc_dcm_obj = dicom.read_file(dicom_source)
+    sour_obj = dicom.read_file(dicom_source)
+
+    # Load dicom headers
+    if not os.path.isfile(dcm_target):
+        err = "DICOM File %s not found."
+        raise Exception(err % dcm_target)
+    tar_obj = dicom.read_file(dcm_target)
 
     # Make output_folder:
     if not os.path.exists(output_folder):
@@ -523,22 +552,18 @@ def convert_nifti_2_dicoms(nifti_path, dcm_targets, dicom_source,
     # Series Number and SOP UID
     ti = time.time()
     series_number = 86532 + int(str(ti)[2:4]) + int(str(ti)[4:6])
-    sop_id = adc_dcm_obj.SOPInstanceUID.split('.')
+    sop_id = sour_obj.SOPInstanceUID.split('.')
     sop_id = '.'.join(sop_id[:-1])+'.'
 
-    for volume_index in range(f_img_data.shape[2]):
-        if f_img_data.shape[2] > 100:
-            filename = os.path.join(output_folder, '%s_%03d.dcm' %
-                                                   (label, volume_index+1))
-        elif f_img_data.shape[2] > 10:
+    dicom_index = 1
+    for slice_index in range(f_img_data.shape[2]):
+        for volume_index in range(f_img_data.shape[3]):
             filename = os.path.join(output_folder, '%s_%02d.dcm' %
-                                                   (label, volume_index+1))
-        else:
-            filename = os.path.join(output_folder, '%s_%d.dcm' %
-                                                   (label, volume_index+1))
-        write_dicom(np.rot90(f_img_data[:, :, volume_index]), filename,
-                    dcm_targets[volume_index], adc_dcm_obj, volume_index,
-                    series_number, sop_id, stype)
+                                                   (label, dicom_index))
+            write_dicom(np.rot90(f_img_data[:, :, slice_index, volume_index]),
+                        filename, tar_obj, sour_obj, dicom_index,
+                        series_number, sop_id, stype)
+            dicom_index += 1
 
 if __name__ == '__main__':
     ARGS = parse_args()
@@ -569,4 +594,4 @@ if __name__ == '__main__':
     spider_obj.run()
 
     # Finish method to copy results
-    # spider_obj.finish()
+    spider_obj.finish()
