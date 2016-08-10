@@ -15,8 +15,6 @@ import csv
 import glob
 import numpy as np
 import nibabel as nib
-import subprocess as sb
-from dax import XnatUtils
 from datetime import datetime
 import matplotlib.pyplot as plt
 from collections import OrderedDict
@@ -373,7 +371,7 @@ Using default.")
                     dpi=100)
         plt.close(fig)
         return pdf_path
-        
+
     def plot_stats_page(self, pdf_path, page_index, stats_dict, title,
                         tables_number=3, columns_header=['Header', 'Value'],
                         limit_size_text_column1=30,
@@ -437,7 +435,7 @@ Using default.")
                     dpi=300)
         plt.close(fig)
         return pdf_path
-        
+
     def merge_pdf_pages(self, pdf_pages, pdf_final):
         """Concatenate all pdf pages in the list into a final pdf.
         You can provide a list of pdf path or give a dictionary
@@ -450,8 +448,8 @@ Using default.")
         self.time_writer('INFO: Concatenate all pdfs pages.')
         pages = ''
         if isinstance(pdf_pages, dict):
-            for order, page in sorted(pdf_pages):
-                pages += '%s %s ' % (pages, page)
+            for key in sorted(pdf_pages.iterkeys()):
+                pages += '%s %s ' % (pages, pdf_pages[key])
         elif isinstance(pdf_pages, list):
             pages = ' '.join(pdf_pages)
         else:
