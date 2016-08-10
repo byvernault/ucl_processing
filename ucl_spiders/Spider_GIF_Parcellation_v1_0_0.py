@@ -460,6 +460,23 @@ Using default.")
         self.run_system_cmd(cmd)
         return pdf_final
 
+
+def smaller_str(str_option, size=10, end=False):
+    """Method to shorten a string into a smaller size.
+    :param str_option: string to shorten
+    :param size: size of the string to keep (default: 10 characters)
+    :param end: keep the end of the string visible (default beginning)
+    :return: shortened string
+    """
+    if len(str_option) > size:
+        if end:
+            return '...%s' % (str_option[-size:])
+        else:
+            return '%s...' % (str_option[:size])
+    else:
+        return str_option
+
+
 if __name__ == '__main__':
     # arguments
     args = parse_args()
