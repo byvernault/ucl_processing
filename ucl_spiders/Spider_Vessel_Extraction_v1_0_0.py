@@ -12,8 +12,6 @@ import os
 import sys
 import numpy as np
 import nibabel as nib
-import subprocess as sb
-from dax import XnatUtils
 from datetime import datetime
 import matplotlib.pyplot as plt
 from dax import XnatUtils, spiders, ScanSpider
@@ -53,6 +51,9 @@ def parse_args():
     ap = spiders.get_scan_argparser("Vessel_Extraction", __purpose__)
     ap.add_argument("--vesselExtPath", dest="vessel_extractor",  required=True,
                     help="path to the executable niftkVesselExtractor.")
+    ap.add_argument("--drc", dest="drc_ana",  required=False,
+                    action='store_true',
+                    help="Set the NIFTK_DRC_ANALYZE to ON.")
     return ap.parse_args()
 
 
@@ -317,7 +318,8 @@ Using default.")
 if __name__ == '__main__':
     ARGS = parse_args()
     # Set environment variable for fixing flips
-    os.environ["NIFTK_DRC_ANALYZE"] = 'ON'
+    if ARGS.drc_ana:
+        os.environ["NIFTK_DRC_ANALYZE"] = 'ON'
 
     # generate spider object:
     spider_obj = Spider_Vessel_Extraction(spider_path=sys.argv[0],
