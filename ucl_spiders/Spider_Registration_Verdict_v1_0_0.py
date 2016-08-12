@@ -532,6 +532,8 @@ def convert_nifti_2_dicoms(nifti_path, dcm_target, dicom_source,
     # Load image from NIFTI
     f_img = nib.load(nifti_path)
     f_img_data = f_img.get_data()
+    # Normalise the image for better display:
+    f_img_data *= 255.0/f_img_data.max()
 
     # Load dicom headers
     if not os.path.isfile(dicom_source):
