@@ -82,8 +82,8 @@ class Processor_Registration_Verdict(SessionProcessor):
                                                    DEFAULT_VERDICT_MODALITIES)
         self.reg_aladin_exe = reg_aladin_exe
         self.args_reg_aladin = args_reg_aladin
-        self.reg_f3d_exe = reg_resample_exe
-        self.args_reg_f3d = args_reg_resample
+        self.reg_resample_exe = reg_resample_exe
+        self.args_reg_resample = args_reg_resample
 
     def has_inputs(self, csess):
         """Method overridden from base class.
