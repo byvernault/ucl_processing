@@ -28,6 +28,7 @@ DEFAULT_SPIDER_PATH = os.path.join(HOME, 'Xnat-management/ucl_processing/\
 ucl_spiders/Spider_Registration_Verdict_v1_0_0.py')
 DEFAULT_WALLTIME = '02:00:00'
 DEFAULT_MEM = 3048
+DEFAULT_PPN = 4
 DEFAULT_VERDICT_MODALITIES = ['SWITCH DB TO YES b3000_80', 'b3000_80',
                               'b2000_vx1.3', 'b1500_vx1.3', 'b500_vx1.3',
                               'b90_vx1.3']
@@ -73,10 +74,10 @@ class Processor_Registration_Verdict(SessionProcessor):
                  reg_resample_exe=DEFAULT_REG_RESAMPLE,
                  args_reg_resample=DEFAULT_ARGS_REG_RESAMPLE,
                  walltime=DEFAULT_WALLTIME, mem_mb=DEFAULT_MEM,
-                 suffix_proc=''):
+                 ppn=DEFAULT_PPN, suffix_proc=''):
         """Entry point for Processor_Registration_Verdict Class."""
         super(Processor_Registration_Verdict,
-              self).__init__(walltime, mem_mb, spider_path, version,
+              self).__init__(walltime, mem_mb, spider_path, version, ppn=ppn,
                              suffix_proc=suffix_proc)
         self.modalities = XnatUtils.get_input_list(scan_modalities,
                                                    DEFAULT_VERDICT_MODALITIES)
