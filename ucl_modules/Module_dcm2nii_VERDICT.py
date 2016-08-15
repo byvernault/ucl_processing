@@ -13,7 +13,7 @@ LOGGER = logging.getLogger('dax')
 DEFAULT_TPM_PATH = '/tmp/dcm2nii_temp/'
 DEFAULT_MODULE_NAME = 'dcm2nii_VERDICT'
 DEFAULT_TEXT_REPORT = 'ERROR/WARNING for dcm2nii_VERDICT :\n'
-DEFAULT_MATLAB_CODE = '/home/dax/scripts/matlab/dcm2VERDICT'
+DEFAULT_MATLAB_CODE = '/home/dax/Code/scripts/matlab/dcm2VERDICT'
 DCM2NII_TEMPLATE = """{dcm2nii} \
 -a n -e n -d n -g y -f n -n y -p n -v y -x n -r n \
 {dicom}"""
