@@ -34,7 +34,7 @@ DEFAULT_VERDICT_MODALITIES = ['SWITCH DB TO YES b3000_80', 'b3000_80',
                               'b90_vx1.3']
 DEFAULT_REG_ALADIN = '/share/apps/cmic/niftypipe_deps/bin/reg_aladin'
 DEFAULT_REG_RESAMPLE = '/share/apps/cmic/niftypipe_deps/bin/reg_resample'
-DEFAULT_ARGS_REG_ALADIN = " -rigOnly"
+DEFAULT_ARGS_REG_ALADIN = " -rigOnly "
 DEFAULT_ARGS_REG_RESAMPLE = ""
 
 # Format for the spider command line
