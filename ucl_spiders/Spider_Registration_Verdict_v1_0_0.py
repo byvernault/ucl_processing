@@ -379,7 +379,7 @@ class Spider_Registration_Verdict(SessionSpider):
             acq_dir = XnatUtils.makedir(os.path.join(self.jobdir,
                                                      'outputs',
                                                      'ACQ%d' % i))
-            filename = '%s_acquisition%d.nii' % (self.xnat_session, index)
+            filename = '%s_acquisition%d.nii' % (self.xnat_session, i)
             nii_file = os.path.join(acq_dir, filename)
             nib.save(nii_5d, nii_file)
             # gzip the nifti:
