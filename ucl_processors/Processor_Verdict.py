@@ -129,6 +129,7 @@ cannot run, no ACQ resource found for %s assessor',
                                    mc=self.mc,
                                    amico=self.amico,
                                    camino=self.camino,
-                                   spams=self.spams)
+                                   spams=self.spams,
+                                   suffix_proc=self.suffix_proc)
 
         return [cmd]
