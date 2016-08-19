@@ -438,23 +438,6 @@ def join_nifti_3Ds_4D(li_nii, nifti_path):
     nib.save(nii_4d, nifti_path)
 
 
-def open_nifti(nifti_path):
-    """Open the nifti from the path given to display for the PDF.
-
-    :param nifti_path: path for the nifti
-    :return: numpy array of data (3D matrix)
-    """
-    # Open niftis with nibabel
-    f_img = nib.load(nifti_path)
-    f_img_data = f_img.get_data()
-    # Draw
-    if len(f_img_data.shape) == 3:
-        data = f_img_data
-    elif len(f_img_data.shape) == 4:
-        data = f_img_data[:, :, :, f_img_data.shape[3]/2]
-    return data
-
-
 def write_dicom(pixel_array, filename, ds_copy, ds_ori, volume_number,
                 series_number, sop_id, stype):
     """Write a dicom from a pixel_array (numpy).
