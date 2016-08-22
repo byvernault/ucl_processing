@@ -33,6 +33,9 @@ DEFAULT_MATLAB_CODE = os.path.join(HOME, 'Code', 'matlab')
 DEFAULT_AMICO = os.path.join(HOME, 'Code', 'AMICO', 'matlab')
 DEFAULT_CAMINO = os.path.join(HOME, 'Code', 'caminoLaura', 'bin')
 DEFAULT_SPAMS = os.path.join(HOME, 'Code', 'spams-matlab')
+DEFAULT_VERDICT_MODALITIES = ['SWITCH DB TO YES b3000_80', 'b3000_80',
+                              'b2000_vx1.3', 'b1500_vx1.3', 'b500_vx1.3',
+                              'b90_vx1.3']
 
 # Format for the spider command line
 SPIDER_FORMAT = """python {spider} \
@@ -92,13 +95,19 @@ class Processor_Verdict(SessionProcessor):
                       (see XnatUtils in dax for information)
         :return: status, qcstatus
         """
+        verdict_cscans = XnatUtils.get_good_cscans(csess, self.modalities)
+        if not verdict_cscans:
+            LOGGER.debug('Processor_Registration_Verdict: \
+        cannot run at all, no VERDICT image found')
+            return -1, 'VERDICT not found'
+
         verdict_cassrs = XnatUtils.get_good_cassr(csess, self.proctype)
         print self.proctype
         print verdict_cassrs
         if not verdict_cassrs:
             LOGGER.debug('Processor_Verdict: \
         cannot run at all, no Registration VERDICT found')
-            return -1, 'VERDICT not found'
+            return 0, 'Registration missing'
 
         cassr = verdict_cassrs[0]
         LOGGER.debug('Processor_Registration_Verdict: \
