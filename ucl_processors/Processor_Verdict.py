@@ -65,6 +65,7 @@ class Processor_Verdict(SessionProcessor):
     """
 
     def __init__(self, spider_path=DEFAULT_SPIDER_PATH, version=None,
+                 scan_modalities=DEFAULT_VERDICT_MODALITIES,
                  proctype=DEFAULT_PROCTYPE, matlab_code=DEFAULT_MATLAB_CODE,
                  amico=DEFAULT_AMICO, camino=DEFAULT_CAMINO,
                  spams=DEFAULT_SPAMS, walltime=DEFAULT_WALLTIME,
@@ -74,6 +75,8 @@ class Processor_Verdict(SessionProcessor):
               self).__init__(walltime, mem_mb, spider_path, version,
                              suffix_proc=suffix_proc)
         self.nb_acq = 1
+        self.modalities = XnatUtils.get_input_list(scan_modalities,
+                                                   DEFAULT_VERDICT_MODALITIES)
         self.proctype = XnatUtils.get_input_list(proctype, DEFAULT_PROCTYPE)
         self.mc = matlab_code
         self.amico = amico
