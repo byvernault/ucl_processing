@@ -105,16 +105,14 @@ class Processor_Verdict(SessionProcessor):
             return -1, 'VERDICT not found'
 
         verdict_cassrs = XnatUtils.get_good_cassr(csess, self.proctype)
-        print self.proctype
-        print verdict_cassrs
         if not verdict_cassrs:
             LOGGER.debug('Processor_Verdict: \
-        cannot run at all, no Registration VERDICT found')
+        cannot run, no good QA Registration VERDICT found')
             return 0, 'Registration missing'
 
         cassr = verdict_cassrs[0]
         LOGGER.debug('Processor_Registration_Verdict: \
-registration assessor found: %s', cassr.info()['label'])
+good registration assessor found: %s', cassr.info()['label'])
 
         if not XnatUtils.has_resource(cassr, 'ACQ1'):
             LOGGER.debug('Processor_Registration_Verdict: \
