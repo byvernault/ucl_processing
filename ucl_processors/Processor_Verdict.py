@@ -92,19 +92,26 @@ class Processor_Verdict(SessionProcessor):
                       (see XnatUtils in dax for information)
         :return: status, qcstatus
         """
-        verdict_csassr = XnatUtils.get_good_cassr(csess, self.proctype)
-        if not verdict_csassr:
+        verdict_cassrs = XnatUtils.get_good_cassr(csess, self.proctype)
+        print self.proctype
+        print verdict_cassrs
+        if not verdict_cassrs:
             LOGGER.debug('Processor_Verdict: \
         cannot run at all, no Registration VERDICT found')
             return -1, 'VERDICT not found'
-        for cassr in verdict_csassr:
-            if not XnatUtils.has_resource(cassr, 'ACQ1'):
-                LOGGER.debug('Processor_Registration_Verdict: \
+
+        cassr = verdict_cassrs[0]
+        LOGGER.debug('Processor_Registration_Verdict: \
+registration assessor found: %s', cassr.info()['label'])
+
+        if not XnatUtils.has_resource(cassr, 'ACQ1'):
+            LOGGER.debug('Processor_Registration_Verdict: \
 cannot run, no ACQ resource found for %s assessor',
-                             cassr.info()['label'])
-                return 0, "Missing ACQ#"
-            if XnatUtils.has_resource(cassr, 'ACQ2'):
-                self.nb_acq = 2
+                         cassr.info()['label'])
+            return 0, "Missing ACQ#"
+
+        if XnatUtils.has_resource(cassr, 'ACQ2'):
+            self.nb_acq = 2
 
         return 1, None
 
