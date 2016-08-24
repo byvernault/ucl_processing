@@ -13,11 +13,13 @@ Purpose:        Generate Verdict Map from all Verdict scans registered \
 import os
 import sys
 import time
+import glob
 import dicom
 import shutil
 import datetime
 import numpy as np
 import nibabel as nib
+from dicom.sequence import Sequence
 from dicom.dataset import Dataset, FileDataset
 from dax import XnatUtils, spiders, SessionSpider
 
@@ -62,15 +64,31 @@ for i=1:nb_slices
     plot_oneslice_selectedmaps('{maps_folder}','{subject}',i,maps_name,1,1,1,jpg_path);
 end
 """
-DEFAULT_MAPS = ['FIT_FobjCamino.nii', 'FIT_R.nii', 'FIT_fEES.nii',
-                'FIT_fIC.nii', 'FIT_fVASC.nii', 'FIT_cellularity.nii']
 DICOM_SCAN_TYPE = ['SWITCH DB TO YES b3000_80']
-MAX = {'FIT_FobjCamino': 50,
-       'FIT_R': 1,
-       'FIT_fEES': 50,
-       'FIT_fIC': 1,
-       'FIT_fVASC': 1,
-       'FIT_cellularity': 50}
+C_RANGE = {'FIT_dir': {'min': 1*10**-10, 'max': 2.9*10**-9},
+           'FIT_FobjCamino': {'min': 0, 'max': 50},
+           'FIT_Fobj': {'min': 0, 'max': 1},
+           'FIT_R': {'min': 0, 'max': 15.10*10**-6},
+           'FIT_fIC': {'min': 0, 'max': 1},
+           'FIT_cellularity': {'min': 2*10**11, 'max': 1.5*10**14},
+           'FIT_fEES': {'min': 0, 'max': 1},
+           'FIT_fVASC': {'min': 0, 'max': 1},
+           'FIT_R_0-3u': {'min': 0, 'max': 2.67*10**-6},
+           'FIT_R_3-6u': {'min': 3.56*10**-6, 'max': 5.34*10**-6},
+           'FIT_R_6-9u': {'min': 6.22*10**-6, 'max': 8.89*10**-6},
+           'FIT_R_9-12u': {'min': 9.77*10**-6, 'max': 11.55*10**-6},
+           'FIT_R_12-15u': {'min': 12.44*10**-6, 'max': 15.10*10**-6},
+           'FIT_fIC_0-3u': {'min': 0, 'max': 1},
+           'FIT_fIC_3-6u': {'min': 0, 'max': 1},
+           'FIT_fIC_6-9u': {'min': 0, 'max': 1},
+           'FIT_fIC_9-12u': {'min': 0, 'max': 1},
+           'FIT_fIC_12-15u': {'min': 0, 'max': 1},
+           'FIT_cell_0-3u': {'min': 3*10**12, 'max': 5*10**16},
+           'FIT_cell_3-6u': {'min': 2*10**12, 'max': 3*10**14},
+           'FIT_cell_6-9u': {'min': 1*10**12, 'max': 2.5*10**14},
+           'FIT_cell_9-12u': {'min': 1*10**12, 'max': 5*10**13},
+           'FIT_cell_12-15u': {'min': 2*10**11, 'max': 5.5*10**13},
+           'FIT_FobjCamino': {'min': 0, 'max': 50}}
 
 
 def parse_args():
@@ -219,14 +237,13 @@ class Spider_Verdict(SessionSpider):
                 err = "DICOM File %s not found."
                 raise Exception(err % self.inputs['dcm'])
             sour_obj = dicom.read_file(self.inputs['dcm'])
-            for maps in DEFAULT_MAPS:
-                nii = os.path.join(outdir, maps)
+            for nii_map in glob.glob(os.path.join(outdir, '*.nii')):
                 convert_nifti_2_dicoms(
-                    nii,
+                    nii_map,
                     sour_obj,
                     osirix_folder,
-                    os.path.basename(nii)[:-4],
-                    label=os.path.basename(nii)[:-4])
+                    os.path.basename(nii_map)[:-4],
+                    label=os.path.basename(nii_map)[:-4])
 
         # Make pdf:
         self.make_pdf()
@@ -281,7 +298,7 @@ class Spider_Verdict(SessionSpider):
         """Method to copy the results in dax.RESULTS_DIR."""
         results_dict = {'PDF': self.pdf_final,
                         'OsiriX': os.path.join(self.jobdir, 'outputs',
-                                               'OsiriX')}
+                                               'OsiriX', 'osirix.zip')}
         for nb_acq in range(1, self.nb_acquisition+1):
             res = 'RMAPS%d' % nb_acq
             results_dict[res] = os.path.join(self.jobdir, 'outputs',
@@ -291,7 +308,7 @@ class Spider_Verdict(SessionSpider):
         self.end()
 
 
-def write_dicom(pixel_array, filename, ds_ori, volume_number,
+def write_dicom(pixel_array, filename, ds_ori,
                 series_number, sop_id, series_description):
     """Write a dicom from a pixel_array (numpy).
 
@@ -299,14 +316,10 @@ def write_dicom(pixel_array, filename, ds_ori, volume_number,
                         If pixel_array is larger than 2D, errors.
     :param filename: string name for the output file.
     :param ds_ori: original pydicom object of the pixel_array
-    :param volume_number: number of the volume being processed
     :param series_number: number of the series being processed
     :param sop_id: SOPInstanceUID for the DICOM
     :param series_description: series description for Osirix display
     """
-    # Set to zero negatives values in the image:
-    # pixel_array[pixel_array < 0] = 0
-
     # Set the DICOM dataset
     file_meta = Dataset()
     file_meta.MediaStorageSOPClassUID = 'Secondary Capture Image Storage'
@@ -315,32 +328,62 @@ def write_dicom(pixel_array, filename, ds_ori, volume_number,
     ds = FileDataset(filename, {}, file_meta=file_meta, preamble="\0"*128)
 
     # Copy the tag from the original DICOM
-    for tag, value in ds_ori.items():
+    for tag, d_obj in ds_ori.items():
         if tag != ds_ori.data_element("PixelData").tag:
-            ds[tag] = value
+            ds[tag] = d_obj
 
     # Other tags to set
     ds.SeriesNumber = series_number
-    ds.SeriesDescription = series_description
     sop_uid = sop_id + str(datetime.datetime.now()).replace('-', '')\
                                                    .replace(':', '')\
                                                    .replace('.', '')\
                                                    .replace(' ', '')
     ds.SOPInstanceUID = sop_uid[:-1]
-    ds.ProtocolName = series_description
-    ds.InstanceNumber = volume_number
-    # Number of Frames:
-    del ds[0x0028, 0x0008]
+    ds.ProtocolName = '%s Verdict MAP' % series_description
+    # Set SeriesDate/ContentDate
+    now = datetime.date.today()
+    ds.SeriesDate = '%d%02d%02d' % (now.year, now.month, now.day)
+    ds.ContentDate = '%d%02d%02d' % (now.year, now.month, now.day)
+    ds.Modality = 'MR'
+    ds.ConversionType = 'WSD'
+    ds.StudyDescription = 'INNOVATE'
+    ds.SeriesDescription = series_description
+    ds.AcquisitionNumber = 1
+    ds.SamplesperPixel = 1
+    ds.PhotometricInterpretation = 'MONOCHROME2'
+    ds.SecondaryCaptureDeviceManufctur = 'Python 2.7.3'
+    nb_frames = pixel_array.shape[2]*pixel_array.shape[3]
+    ds.NumberOfFrames = nb_frames
+    ds.PixelRepresentation = 0
+    ds.HighBit = 15
+    ds.BitsStored = 8
+    ds.BitsAllocated = 8
+    ds.SmallestImagePixelValue = pixel_array.min()
+    ds.LargestImagePixelValue = pixel_array.max()
+    ds.Columns = pixel_array.shape[0]
+    ds.Rows = pixel_array.shape[1]
 
-    # Copy rows/columns
-    ds[0x00280010].value = pixel_array.shape[0]  # rows
-    ds[0x00280011].value = pixel_array.shape[1]  # columns
+    # Fixing the sequence if the number of frames was less than the original
+    # it happens if we remove the last volume for phillips data (mean)
+    if ds_ori.NumberOfFrames > nb_frames:
+        new_seq = Sequence()
+        for i in xrange(0, ds_ori.NumberOfFrames):
+            if i % 5 == 0:  # take one slice for each (14)
+                new_seq.append(ds_ori[0x5200, 0x9230][i])
+        ds[0x5200, 0x9230].value = new_seq
+
+    # Organise the array:
+    pixel_array2 = np.zeros((pixel_array.shape[0]*pixel_array.shape[2],
+                             pixel_array.shape[1]))
+    for i in range(pixel_array.shape[2]):
+        pixel_array2[pixel_array.shape[0]*i:pixel_array.shape[0]*(i+1),
+                     :] = pixel_array[:, :, i, 0]
 
     # Set the Image pixel array
-    if pixel_array.dtype != np.uint16:
-        pixel_array = pixel_array.astype(np.uint16)
-    ds.PixelData = pixel_array.tostring()
+    if pixel_array2.dtype != np.uint8:
+        pixel_array2 = pixel_array2.astype(np.uint8)
 
+    ds.PixelData = pixel_array2.tostring()
     # Save the image
     ds.save_as(filename)
 
@@ -360,12 +403,18 @@ def convert_nifti_2_dicoms(nifti_path, sour_obj, output_folder,
         raise Exception("NIFTY File %s not found." % nifti_path)
     # Load image from NIFTI
     f_img = nib.load(nifti_path)
-    f_img_data = f_img.get_data()
-    # Normalise the image for better display:
-    minimun = 0
-    f_img_data[f_img_data < minimun] = minimun
-    f_img_data[f_img_data > MAX.get(label, 1.0)] = MAX.get(label, 1.0)
-    f_img_data *= 255.0/np.float64(f_img_data.max())
+    f_data = f_img.get_data()
+    # Rotation 270
+    f_data = np.rot90(f_data)
+    f_data = np.rot90(f_data)
+    f_data = np.rot90(f_data)
+    # Normalizing data:
+    dmin = C_RANGE[label]['min']
+    dmax = C_RANGE[label]['max']
+    f_data[f_data < dmin] = dmin
+    f_data[f_data > dmax] = dmax
+    # Scale numbers to uint8
+    f_data = (f_data - dmin)*255.0/(dmax - dmin)
 
     # Make output_folder:
     if not os.path.exists(output_folder):
@@ -377,12 +426,9 @@ def convert_nifti_2_dicoms(nifti_path, sour_obj, output_folder,
     sop_id = sour_obj.SOPInstanceUID.split('.')
     sop_id = '.'.join(sop_id[:-1])+'.'
 
-    for slice_index in range(f_img_data.shape[2]):
-        filename = os.path.join(output_folder, '%s_%02d.dcm' %
-                                               (label, slice_index))
-        write_dicom(np.rot90(f_img_data[:, :, slice_index]),
-                    filename, sour_obj, slice_index,
-                    series_number, sop_id, series_description)
+    filename = os.path.join(output_folder, '%s.dcm' % label)
+    write_dicom(f_data, filename, sour_obj,
+                series_number, sop_id, series_description)
 
 if __name__ == '__main__':
     args = parse_args()

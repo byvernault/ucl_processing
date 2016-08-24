@@ -104,7 +104,10 @@ class Processor_Verdict(SessionProcessor):
         cannot run at all, no VERDICT image found')
             return -1, 'VERDICT not found'
 
-        verdict_cassrs = XnatUtils.get_good_cassr(csess, self.proctype)
+        verdict_cassrs = list()
+        for cassr in csess.assessors():
+            if XnatUtils.is_cassessor_good_type(cassr, self.proctype):
+                verdict_cassrs.append(cassr)
         if not verdict_cassrs:
             LOGGER.debug('Processor_Verdict: \
         cannot run, no good QA Registration VERDICT found')
