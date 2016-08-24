@@ -17,6 +17,7 @@ import shutil
 import datetime
 import numpy as np
 import nibabel as nib
+from dicom.sequence import Sequence
 from dicom.dataset import Dataset, FileDataset
 from dax import spiders, XnatUtils, SessionSpider
 
@@ -224,19 +225,28 @@ class Spider_Registration_Verdict(SessionSpider):
                     self.acquisitions[i][index]['reg'] = nii_reg
 
                     # Generate DICOM version of the reg_f3d results:
-                    convert_nifti_2_dicoms(
+                    convert_nifti_2_dicom(
                         nii_reg,
                         self.acquisitions[i][index-1]['dicom'],
                         self.acquisitions[i][index]['dicom'],
                         osirix_folder,
                         scan_info['type'],
-                        label=("%s_%s_reg" % (scan_info['ID'],
-                                              scan_info['type'])))
+                        label=("%s_%s_reg"
+                               % (scan_info['ID'],
+                                  scan_info['type'].replace(' ', '_'))))
                 else:
                     ori_nii = self.acquisitions[i][index]['4D']
                     self.acquisitions[i][index]['reg'] = ori_nii
-
-            shutil.move(self.acquisitions[i][0]['dicom'], osirix_folder)
+                    # Convert the original NIFTI from b3000 to dicom:
+                    convert_nifti_2_dicom(
+                        ori_nii,
+                        self.acquisitions[i][index]['dicom'],
+                        self.acquisitions[i][index]['dicom'],
+                        osirix_folder,
+                        scan_info['type'],
+                        label=("%s_%s_reg"
+                               % (scan_info['ID'],
+                                  scan_info['type'].replace(' ', '_'))))
 
         # Generate big niftis
         self.generate_big_nifti()
@@ -438,7 +448,7 @@ def join_nifti_3Ds_4D(li_nii, nifti_path):
     nib.save(nii_4d, nifti_path)
 
 
-def write_dicom(pixel_array, filename, ds_copy, ds_ori, volume_number,
+def write_dicom(pixel_array, filename, ds_copy, ds_ori,
                 series_number, sop_id, stype):
     """Write a dicom from a pixel_array (numpy).
 
@@ -447,14 +457,10 @@ def write_dicom(pixel_array, filename, ds_copy, ds_ori, volume_number,
     :param filename: string name for the output file.
     :param ds_copy: pydicom object with the header that need to be copy
     :param ds_ori: original pydicom object of the pixel_array
-    :param volume_number: number of the volume being processed
     :param series_number: number of the series being processed
     :param sop_id: SOPInstanceUID for the DICOM
     :param stype: type for the scan
     """
-    # Set to zero negatives values in the image:
-    pixel_array[pixel_array < 0] = 0
-
     # Set the DICOM dataset
     file_meta = Dataset()
     file_meta.MediaStorageSOPClassUID = 'Secondary Capture Image Storage'
@@ -463,42 +469,69 @@ def write_dicom(pixel_array, filename, ds_copy, ds_ori, volume_number,
     ds = FileDataset(filename, {}, file_meta=file_meta, preamble="\0"*128)
 
     # Copy the tag from the original DICOM
-    for tag, value in ds_ori.items():
+    for tag, d_obj in ds_ori.items():
         if tag != ds_ori.data_element("PixelData").tag:
-            ds[tag] = value
+            ds[tag] = d_obj
 
     # Other tags to set
     ds.SeriesNumber = series_number
-    if 'SeriesDescription' not in ds:
-        ds.SeriesDescription = stype + ' registered'
-    else:
-        ds.SeriesDescription = ds.SeriesDescription + ' registered'
     sop_uid = sop_id + str(datetime.datetime.now()).replace('-', '')\
                                                    .replace(':', '')\
                                                    .replace('.', '')\
                                                    .replace(' ', '')
     ds.SOPInstanceUID = sop_uid[:-1]
-    ds.ProtocolName = ds_ori.ProtocolName
-    ds.InstanceNumber = volume_number
-    # Number of Frames:
-    del ds[0x0028, 0x0008]
+    ds.ProtocolName = '%s registered ' % stype
+    # Set SeriesDate/ContentDate
+    now = datetime.date.today()
+    ds.SeriesDate = '%d%02d%02d' % (now.year, now.month, now.day)
+    ds.ContentDate = '%d%02d%02d' % (now.year, now.month, now.day)
+    ds.Modality = 'MR'
+    ds.ConversionType = 'WSD'
+    ds.StudyDescription = 'INNOVATE'
+    ds.SeriesDescription = '%s_registered' % stype
+    ds.SamplesperPixel = 1
+    ds.PhotometricInterpretation = 'MONOCHROME2'
+    ds.SecondaryCaptureDeviceManufctur = 'Python 2.7.3'
+    nb_frames = pixel_array.shape[2]*pixel_array.shape[3]
+    ds.NumberOfFrames = nb_frames
+    ds.PixelRepresentation = 0
+    ds.HighBit = 15
+    ds.BitsStored = 8
+    ds.BitsAllocated = 8
+    ds.SmallestImagePixelValue = pixel_array.min()
+    ds.LargestImagePixelValue = pixel_array.max()
+    ds.Columns = pixel_array.shape[0]
+    ds.Rows = pixel_array.shape[1]
 
-    # Copy from T2 the orientation tags:
-    for tag in TAGS_TO_COPY:
-        if tag in ds_copy:
-            ds[tag] = ds_copy[tag]
+    # Fixing the sequence if the number of frames was less than the original
+    # it happens if we remove the last volume for phillips data (mean)
+    if ds_ori.NumberOfFrames > nb_frames:
+        nb_ori_vol = ds_ori.NumberOfFrames*pixel_array.shape[3]/nb_frames
+        new_seq = Sequence()
+        for i in xrange(0, ds_ori.NumberOfFrames):
+            if i % nb_ori_vol != 0:
+                new_seq.append(ds_ori[0x5200, 0x9230][i])
+        ds[0x5200, 0x9230].value = new_seq
+
+    # Organise the array:
+    size = pixel_array.shape
+    array = np.zeros((size[0]*size[2]*size[3], size[1]))
+    for i in range(size[2]):
+        for j in range(size[3]):
+            array[size[0]*j+i*size[3]*size[0]:size[0]*(j+1)+i*size[3]*size[0],
+                  :] = pixel_array[:, :, i, j]
 
     # Set the Image pixel array
-    if pixel_array.dtype != np.uint16:
-        pixel_array = pixel_array.astype(np.uint16)
-    ds.PixelData = pixel_array.tostring()
+    if array.dtype != np.uint8:
+        array = array.astype(np.uint8)
+    ds.PixelData = array.tostring()
 
     # Save the image
     ds.save_as(filename)
 
 
-def convert_nifti_2_dicoms(nifti_path, dcm_target, dicom_source,
-                           output_folder, stype, label=None):
+def convert_nifti_2_dicom(nifti_path, dcm_target, dicom_source,
+                          output_folder, stype, label=None):
     """Convert 4D niftis into DICOM files.
 
     :param nifti_path: path to the nifti file
@@ -514,9 +547,15 @@ def convert_nifti_2_dicoms(nifti_path, dcm_target, dicom_source,
         raise Exception("NIFTY File %s not found." % nifti_path)
     # Load image from NIFTI
     f_img = nib.load(nifti_path)
-    f_img_data = f_img.get_data()
-    # Normalise the image for better display:
-    f_img_data *= 255.0/f_img_data.max()
+    f_data = f_img.get_data()
+    # Rotation 270
+    f_data = np.rot90(f_data)
+    f_data = np.rot90(f_data)
+    f_data = np.rot90(f_data)
+    f_data = np.flipud(f_data)
+
+    # Scale numbers to uint8
+    f_data = (f_data - f_data.min())*255.0/(f_data.max() - f_data.min())
 
     # Load dicom headers
     if not os.path.isfile(dicom_source):
@@ -535,20 +574,14 @@ def convert_nifti_2_dicoms(nifti_path, dcm_target, dicom_source,
         os.makedirs(output_folder)
 
     # Series Number and SOP UID
-    ti = time.time()
-    series_number = 86532 + int(str(ti)[2:4]) + int(str(ti)[4:6])
+    str_ti = "%f" % time.time()
+    series_number = 86532 + int(str_ti[-4:-2]) + int(str_ti[-2:])
     sop_id = sour_obj.SOPInstanceUID.split('.')
     sop_id = '.'.join(sop_id[:-1])+'.'
 
-    dicom_index = 1
-    for slice_index in range(f_img_data.shape[2]):
-        for volume_index in range(f_img_data.shape[3]):
-            filename = os.path.join(output_folder, '%s_%02d.dcm' %
-                                                   (label, dicom_index))
-            write_dicom(np.rot90(f_img_data[:, :, slice_index, volume_index]),
-                        filename, tar_obj, sour_obj, dicom_index,
-                        series_number, sop_id, stype)
-            dicom_index += 1
+    filename = os.path.join(output_folder, '%s.dcm' % (label))
+    write_dicom(f_data, filename, tar_obj, sour_obj,
+                series_number, sop_id, stype)
 
 if __name__ == '__main__':
     ARGS = parse_args()
