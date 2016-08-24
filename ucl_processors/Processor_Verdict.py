@@ -28,7 +28,7 @@ DEFAULT_SPIDER_PATH = os.path.join(HOME, 'Xnat-management/ucl_processing/\
 ucl_spiders/', 'Spider_Verdict_v1_0_0.py')
 DEFAULT_WALLTIME = '02:00:00'
 DEFAULT_MEM = 3048
-DEFAULT_PROCTYPE = ['Registration_Verdict_v1']
+DEFAULT_PROCTYPE = 'Registration_Verdict_v1'
 DEFAULT_MATLAB_CODE = os.path.join(HOME, 'Code', 'matlab')
 DEFAULT_AMICO = os.path.join(HOME, 'Code', 'AMICO', 'matlab')
 DEFAULT_CAMINO = os.path.join(HOME, 'Code', 'caminoLaura', 'bin')
@@ -77,7 +77,7 @@ class Processor_Verdict(SessionProcessor):
         self.nb_acq = 1
         self.modalities = XnatUtils.get_input_list(scan_modalities,
                                                    DEFAULT_VERDICT_MODALITIES)
-        self.proctype = XnatUtils.get_input_list(proctype, DEFAULT_PROCTYPE)
+        self.proctype = proctype
         self.mc = matlab_code
         self.amico = amico
         self.camino = camino
@@ -106,7 +106,7 @@ class Processor_Verdict(SessionProcessor):
 
         verdict_cassrs = list()
         for cassr in csess.assessors():
-            if XnatUtils.is_cassessor_good_type(cassr, self.proctype):
+            if XnatUtils.is_cassessor_good_type(cassr, [self.proctype]):
                 verdict_cassrs.append(cassr)
         if not verdict_cassrs:
             LOGGER.debug('Processor_Verdict: \
