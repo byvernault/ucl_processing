@@ -26,8 +26,8 @@ LOGGER = logging.getLogger('dax')
 HOME = os.path.expanduser("~")
 DEFAULT_SPIDER_PATH = os.path.join(HOME, 'Xnat-management/ucl_processing/\
 ucl_spiders/', 'Spider_Verdict_v1_0_0.py')
-DEFAULT_WALLTIME = '02:00:00'
-DEFAULT_MEM = 3048
+DEFAULT_WALLTIME = '04:00:00'
+DEFAULT_MEM = 5048
 DEFAULT_PROCTYPE = 'Registration_Verdict_v1'
 DEFAULT_MATLAB_CODE = os.path.join(HOME, 'Code', 'matlab')
 DEFAULT_AMICO = os.path.join(HOME, 'Code', 'AMICO', 'matlab')
