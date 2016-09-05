@@ -138,10 +138,10 @@ class Spider_Sample_GM_Segment(ScanSpider):
                   '1': 'c2',
                   '2': 'c3',
                   '3': 'm'}
-        images = {'0': os.path.join(folder, 'c1%s' % in_filename),
-                  '1': os.path.join(folder, 'c2%s' % in_filename),
-                  '2': os.path.join(folder, 'c3%s' % in_filename),
-                  '3': os.path.join(folder, 'm%s' % in_filename)}
+        images = [os.path.join(folder, 'c1%s' % in_filename),
+                  os.path.join(folder, 'c2%s' % in_filename),
+                  os.path.join(folder, 'c3%s' % in_filename),
+                  os.path.join(folder, 'm%s' % in_filename)]
         self.plot_images_page(self.pdf_final, 1, images,
                               pdf_title, slices=slices, image_labels=labels)
 
