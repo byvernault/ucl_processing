@@ -27,7 +27,7 @@ HOME = os.path.expanduser("~")
 DEFAULT_SPIDER_PATH = os.path.join(HOME, 'Xnat-management/ucl_processing/\
 ucl_spiders/', 'Spider_Sample_GM_Segment_v1_0_0.py')
 DEFAULT_WALLTIME = '01:00:00'
-DEFAULT_MEM = 3048
+DEFAULT_MEM = 8048
 
 DEFAULT_SCAN_TYPES = []  # ADD SCAN TYPES
 DEFAULT_SPM12 = os.path.join(HOME, 'Code', 'spm12')
