@@ -40,8 +40,8 @@ SPIDER_FORMAT = """python {spider} \
 -e {sess} \
 -c {scan} \
 -d {dir} \
---spm12 {spm12}\
---mc {matlab_code}\
+--spm12 {spm12} \
+--mc {matlab_code} \
 --suffix "{suffix_proc}"
 """
 
