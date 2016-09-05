@@ -162,7 +162,8 @@ class Spider_Verdict(SessionSpider):
         self.nb_acquisition = int(nb_acquisition)
 
         self.inputs = dict()
-        self.pdf_final = os.path.join(self.jobdir, 'VERDICT_report.pdf')
+        self.pdf_final = os.path.join(self.jobdir,
+                                      '%s_VERDICT_report.pdf' % xnat_session)
 
         self.matlab_code = matlab_code
         self.amico = amico
