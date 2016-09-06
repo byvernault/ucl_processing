@@ -107,7 +107,7 @@ class Spider_Sample_GM_Segment(ScanSpider):
         matlab_script = os.path.join(folder, 'run_sample_GM.m')
         with open(matlab_script, "w") as f:
             f.writelines(mat_lines)
-        XnatUtils.run_matlab(matlab_script)
+        XnatUtils.run_matlab(matlab_script, verbose=True)
 
         # Make report:
         self.make_pdf()
@@ -164,8 +164,6 @@ class Spider_Sample_GM_Segment(ScanSpider):
                 rc_res.append(os.path.join(folder, filename))
         mat_res.append(os.path.join(self.jobdir, 'Sample_GM_Segment',
                                     'run_sample_GM.m'))
-        mat_res.append(os.path.join(self.jobdir, 'Sample_GM_Segment',
-                                    'run_sample_GM_outlog.log'))
         results_dict = {'PDF': self.pdf_final,
                         'RC': rc_res,
                         'BIAS': bias_res,
