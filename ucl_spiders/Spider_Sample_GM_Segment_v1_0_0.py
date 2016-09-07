@@ -178,7 +178,36 @@ class Spider_Sample_GM_Segment(ScanSpider):
                         'MAT': mat_res
                         }
         self.upload_dict(results_dict)
+        self.removeall(os.path.join(self.jobdir, 'Sample_GM_Segment'))
         self.end()
+
+
+ERROR_STR = """Error removing %(path)s, %(error)s """
+
+
+def rmgeneric(path, __func__):
+
+    try:
+        __func__(path)
+        print 'Removed ', path
+    except OSError, (errno, strerror):
+        print ERROR_STR % {'path': path, 'error': strerror}
+
+
+def removeall(path):
+    if not os.path.isdir(path):
+        return
+    files = os.listdir(path)
+
+    for x in files:
+        fullpath = os.path.join(path, x)
+        if os.path.isfile(fullpath):
+            f = os.remove
+            rmgeneric(fullpath, f)
+        elif os.path.isdir(fullpath):
+            removeall(fullpath)
+            f = os.rmdir
+            rmgeneric(fullpath, f)
 
 
 if __name__ == '__main__':
