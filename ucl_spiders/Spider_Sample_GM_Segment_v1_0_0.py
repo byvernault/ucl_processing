@@ -80,6 +80,7 @@ class Spider_Sample_GM_Segment(ScanSpider):
                              xnat_session, xnat_scan, xnat_host, xnat_user,
                              xnat_pass, suffix)
         self.inputs = list()
+        self.input_file = ''
         self.matlab_code = os.path.abspath(matlab_code)
         self.spm12 = os.path.abspath(spm12)
         self.pdf_final = os.path.join(self.jobdir,
@@ -104,6 +105,7 @@ class Spider_Sample_GM_Segment(ScanSpider):
             if filepath.endswith('.nii.gz'):
                 XnatUtils.gunzip_file(filepath)
                 input_file = filepath[:-3]
+        self.input_file = input_file
         folder = os.path.join(self.jobdir, 'Sample_GM_Segment')
         mat_lines = MAT_TEMPLATE.format(
                         matlab_code=self.matlab_code,
