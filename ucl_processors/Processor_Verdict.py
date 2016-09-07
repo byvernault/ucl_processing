@@ -74,7 +74,6 @@ class Processor_Verdict(SessionProcessor):
         super(Processor_Verdict,
               self).__init__(walltime, mem_mb, spider_path, version,
                              suffix_proc=suffix_proc)
-        self.nb_acq = 1
         self.modalities = XnatUtils.get_input_list(scan_modalities,
                                                    DEFAULT_VERDICT_MODALITIES)
         self.proctype = proctype
@@ -123,9 +122,6 @@ cannot run, no ACQ resource found for %s assessor',
                          cassr.info()['label'])
             return 0, "Missing ACQ#"
 
-        if XnatUtils.has_resource(cassr, 'ACQ2'):
-            self.nb_acq = 2
-
         return 1, None
 
     def get_cmds(self, assessor, jobdir):
@@ -139,12 +135,16 @@ cannot run, no ACQ resource found for %s assessor',
         subj_label = assessor.parent().parent().label()
         sess_label = assessor.parent().label()
 
+        nb_acq = 1
+        if assessor.out_resource('ACQ2').exists():
+            nb_acq = 2
+
         cmd = SPIDER_FORMAT.format(spider=self.spider_path,
                                    proj=proj_label,
                                    subj=subj_label,
                                    sess=sess_label,
                                    dir=jobdir,
-                                   nb_acq=self.nb_acq,
+                                   nb_acq=nb_acq,
                                    proctype=self.proctype,
                                    mc=self.mc,
                                    amico=self.amico,
