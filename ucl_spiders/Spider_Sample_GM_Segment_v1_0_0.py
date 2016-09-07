@@ -95,19 +95,19 @@ class Spider_Sample_GM_Segment(ScanSpider):
         if not os.path.exists(os.path.join(self.jobdir, 'inputs')):
             os.makedirs(folder)
         self.inputs.extend(self.download(self.xnat_scan, resource, folder))
-        # Gzip files
-        for filepath in self.inputs:
-            if filepath.endswith('.nii'):
-                XnatUtils.gunzip_file(filepath)
-                self.inputs.append(filepath[:-3])
-            self.inputs.remove(filepath)
 
     def run(self):
         """Method running the process for the spider on the inputs data."""
+        # Gzip files
+        input_file = ''
+        for filepath in self.inputs:
+            if filepath.endswith('.nii'):
+                XnatUtils.gunzip_file(filepath)
+                input_file = filepath[:-3]
         folder = os.path.join(self.jobdir, 'Sample_GM_Segment')
         mat_lines = MAT_TEMPLATE.format(
                         matlab_code=self.matlab_code,
-                        input_file=self.inputs[0],
+                        input_file=input_file,
                         spm12=self.spm12)
         matlab_script = os.path.join(folder, 'run_sample_GM.m')
         with open(matlab_script, "w") as f:
