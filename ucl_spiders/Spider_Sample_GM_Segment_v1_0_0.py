@@ -101,7 +101,7 @@ class Spider_Sample_GM_Segment(ScanSpider):
         # Gzip files
         input_file = ''
         for filepath in self.inputs:
-            if filepath.endswith('.nii'):
+            if filepath.endswith('.nii.gz'):
                 XnatUtils.gunzip_file(filepath)
                 input_file = filepath[:-3]
         folder = os.path.join(self.jobdir, 'Sample_GM_Segment')
