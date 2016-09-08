@@ -254,8 +254,6 @@ class Spider_Verdict(SessionSpider):
                 err = "DICOM File %s not found."
                 raise Exception(err % self.inputs['dcm'])
             sour_obj = dicom.read_file(self.inputs['dcm'])
-            # create the subtracted maps (objCamino):
-            subtract_obj_to_map(outdir)
 
             # Convert all niftis to dicoms
             convert_niftis_2_dicoms(
