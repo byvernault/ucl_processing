@@ -290,7 +290,8 @@ class Spider_Verdict(SessionSpider):
         fpages = list()
         # Run matlab function
         for nb_acq in range(1, self.nb_acquisition+1):
-            pdf_page = 'VerdictMapAcq%d.pdf' % nb_acq
+            pdf_page = os.path.join(output_folder, str(nb_acq),
+                                    'VerdictMapAcq%d.pdf' % nb_acq)
             mat_lines = DEFAULT_PDF_MAKER.format(
                     matlab_code=self.matlab_code,
                     maps_folder=os.path.join(output_folder, str(nb_acq),
