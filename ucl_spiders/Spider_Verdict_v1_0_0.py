@@ -244,7 +244,7 @@ class Spider_Verdict(SessionSpider):
             matlab_script = os.path.join(output_folder, 'run_verdict.m')
             with open(matlab_script, "w") as f:
                 f.writelines(mat_lines)
-            XnatUtils.run_matlab(matlab_script, verbose=True)
+            run_matlab(matlab_script, verbose=True)
 
             # Generate Dicom for OsiriX
             outdir = os.path.join(output_folder, str(nb_acq), 'AMICO',
@@ -326,6 +326,25 @@ class Spider_Verdict(SessionSpider):
                                              'VerdictProstate_Rmaps')
         self.upload_dict(results_dict)
         self.end()
+
+
+def run_matlab(matlab_script, verbose=False):
+    """Call MATLAB with -nodesktop -nosplash and -singlecompthread.
+
+    :param matlab_script: Full path to the .m file to run
+    :param verbose: True to print all MATLAB output to terminal, False to
+     suppress.
+    :return: None
+    """
+    print "Matlab script: %s running ..." % matlab_script
+    cmd = "matlab -nodisplay -nodesktop -nojvm -nosplash -singleCompThread \
+< %s" % matlab_script
+    if not verbose:
+        matlabdir = os.path.dirname(matlab_script)
+        prefix = os.path.basename(matlab_script).split('.')[0]
+        cmd = cmd+' > '+os.path.join(matlabdir, prefix+'_outlog.log')
+    os.system(cmd)
+    print "Matlab script: %s done" % matlab_script
 
 
 def write_dicom(pixel_array, filename, ds_ori,

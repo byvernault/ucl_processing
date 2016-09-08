@@ -105,6 +105,7 @@ class Processor_Verdict(SessionProcessor):
 
         verdict_cassrs = list()
         for cassr in csess.assessors():
+            print cassr.info()
             if XnatUtils.is_cassessor_good_type(cassr, [self.proctype]):
                 verdict_cassrs.append(cassr)
         if not verdict_cassrs:
@@ -136,7 +137,14 @@ cannot run, no ACQ resource found for %s assessor',
         sess_label = assessor.parent().label()
 
         nb_acq = 1
-        if assessor.out_resource('ACQ2').exists():
+        csess = XnatUtils.CachedImageSession(assessor._intf, proj_label,
+                                             subj_label, sess_label)
+        reg_verdict = ''
+        for cassr in csess.assessors():
+            if XnatUtils.is_cassessor_good_type(cassr, [self.proctype]):
+                reg_verdict = cassr
+
+        if XnatUtils.has_resource(reg_verdict, 'ACQ2'):
             nb_acq = 2
 
         cmd = SPIDER_FORMAT.format(spider=self.spider_path,
