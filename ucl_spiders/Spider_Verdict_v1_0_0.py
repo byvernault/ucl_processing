@@ -211,9 +211,11 @@ class Spider_Verdict(SessionSpider):
 
         for nb_acq in range(1, self.nb_acquisition+1):
             res_name = '%s%d' % (resource, nb_acq)
+            self.time_writer('Download resource: %s' % res_name)
             file_gzip = XnatUtils.download_file_from_obj(
                                   folder, a.out_resource(res_name))
-            XnatUtils.ungzip_nii(folder)
+            self.time_writer('Unzip file: %s' % res_name)
+            XnatUtils.gunzip_file(file_gzip)
             self.inputs[nb_acq] = file_gzip[:-3]
 
         sc = XnatUtils.get_good_scans(a.parent(), DICOM_SCAN_TYPE)[0]
@@ -244,7 +246,7 @@ class Spider_Verdict(SessionSpider):
             matlab_script = os.path.join(output_folder, 'run_verdict.m')
             with open(matlab_script, "w") as f:
                 f.writelines(mat_lines)
-            run_matlab(matlab_script, verbose=True)
+            self.run_matlab(matlab_script, verbose=True)
 
             # Generate Dicom for OsiriX
             outdir = os.path.join(output_folder, str(nb_acq), 'AMICO',
@@ -328,24 +330,23 @@ class Spider_Verdict(SessionSpider):
         self.upload_dict(results_dict)
         self.end()
 
+    def run_matlab(self, matlab_script, verbose=False):
+        """Call MATLAB with -nodesktop -nosplash and -singlecompthread.
 
-def run_matlab(matlab_script, verbose=False):
-    """Call MATLAB with -nodesktop -nosplash and -singlecompthread.
-
-    :param matlab_script: Full path to the .m file to run
-    :param verbose: True to print all MATLAB output to terminal, False to
-     suppress.
-    :return: None
-    """
-    print "Matlab script: %s running ..." % matlab_script
-    cmd = "matlab -nodisplay -nodesktop -nojvm -nosplash -singleCompThread \
-< %s" % matlab_script
-    if not verbose:
-        matlabdir = os.path.dirname(matlab_script)
-        prefix = os.path.basename(matlab_script).split('.')[0]
-        cmd = cmd+' > '+os.path.join(matlabdir, prefix+'_outlog.log')
-    os.system(cmd)
-    print "Matlab script: %s done" % matlab_script
+        :param matlab_script: Full path to the .m file to run
+        :param verbose: True to print all MATLAB output to terminal, False to
+         suppress.
+        :return: None
+        """
+        self.time_writer("Matlab script: %s running ..." % matlab_script)
+        cmd = "matlab -nodisplay -nodesktop -nojvm -nosplash -singleCompThread \
+    < %s" % matlab_script
+        if not verbose:
+            matlabdir = os.path.dirname(matlab_script)
+            prefix = os.path.basename(matlab_script).split('.')[0]
+            cmd = cmd+' > '+os.path.join(matlabdir, prefix+'_outlog.log')
+        os.system(cmd)
+        self.time_writer("Matlab script: %s done" % matlab_script)
 
 
 def write_dicom(pixel_array, filename, ds_ori,
