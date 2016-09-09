@@ -214,7 +214,7 @@ class Spider_Verdict(SessionSpider):
             self.time_writer('Download resource: %s' % res_name)
             file_gzip = XnatUtils.download_file_from_obj(
                                   folder, a.out_resource(res_name))
-            self.time_writer('Unzip file: %s' % res_name)
+            self.time_writer('Unzip file: %s' % file_gzip)
             XnatUtils.gunzip_file(file_gzip)
             self.inputs[nb_acq] = file_gzip[:-3]
 
