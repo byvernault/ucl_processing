@@ -90,6 +90,10 @@ Could not delete it.' % self.directory)
         :param cscan: CacheScan object from XnatUtils
         :return: True if needs to run or False otherwise
         """
+        # Unusable
+        if XnatUtils.is_cscan_unusable(cscan):
+            LOGGER.debug('Scan unusable.')
+            return False
         # Check output
         if XnatUtils.has_resource(cscan, 'NIFTI'):
             LOGGER.debug('Has NIFTI')
