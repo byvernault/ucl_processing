@@ -36,6 +36,10 @@ DEFAULT_SPAMS = os.path.join(HOME, 'Code', 'spams-matlab')
 DEFAULT_VERDICT_MODALITIES = ['SWITCH DB TO YES b3000_80', 'b3000_80',
                               'b2000_vx1.3', 'b1500_vx1.3', 'b500_vx1.3',
                               'b90_vx1.3']
+DEFAULT_SCHEME_FILE = os.path.join(DEFAULT_MATLAB_CODE,
+                                   'NOptimisedV_IN.scheme')
+VERDICT_SUBJ_SCHEME_FILE = os.path.join(DEFAULT_MATLAB_CODE,
+                                        'NOptimisedV.scheme')
 
 # Format for the spider command line
 SPIDER_FORMAT = """python {spider} \
@@ -50,6 +54,7 @@ SPIDER_FORMAT = """python {spider} \
 --amico {amico} \
 --camino {camino} \
 --spams {spams} \
+--scheme {scheme} \
 """
 
 
@@ -147,6 +152,11 @@ cannot run, no ACQ resource found for %s assessor',
         if XnatUtils.has_resource(reg_verdict, 'ACQ2'):
             nb_acq = 2
 
+        if subj_label.startswith('VERDICT-'):
+            scheme_file = VERDICT_SUBJ_SCHEME_FILE
+        else:
+            scheme_file = DEFAULT_SCHEME_FILE
+
         cmd = SPIDER_FORMAT.format(spider=self.spider_path,
                                    proj=proj_label,
                                    subj=subj_label,
@@ -158,6 +168,7 @@ cannot run, no ACQ resource found for %s assessor',
                                    amico=self.amico,
                                    camino=self.camino,
                                    spams=self.spams,
+                                   scheme=scheme_file,
                                    suffix_proc=self.suffix_proc)
 
         return [cmd]
