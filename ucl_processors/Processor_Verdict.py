@@ -33,9 +33,9 @@ DEFAULT_MATLAB_CODE = os.path.join(HOME, 'Code', 'matlab')
 DEFAULT_AMICO = os.path.join(HOME, 'Code', 'AMICO', 'matlab')
 DEFAULT_CAMINO = os.path.join(HOME, 'Code', 'caminoLaura', 'bin')
 DEFAULT_SPAMS = os.path.join(HOME, 'Code', 'spams-matlab')
-DEFAULT_VERDICT_MODALITIES = ['SWITCH DB TO YES b3000_80', 'b3000_80',
-                              'b2000_vx1.3', 'b1500_vx1.3', 'b500_vx1.3',
-                              'b90_vx1.3']
+DEFAULT_VERDICT_MODALITIES = [
+    'WIP b3000_90 SENSE', 'SWITCH DB TO YES b3000_80', 'b3000_80',
+    'b2000_vx1.3', 'b1500_vx1.3', 'b500_vx1.3', 'b90_vx1.3']
 DEFAULT_SCHEME_FILE = os.path.join(DEFAULT_MATLAB_CODE,
                                    'NOptimisedV_IN.scheme')
 VERDICT_SUBJ_SCHEME_FILE = os.path.join(DEFAULT_MATLAB_CODE,

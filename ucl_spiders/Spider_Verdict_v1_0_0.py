@@ -62,7 +62,8 @@ for i=1:nb_slices
     plot_oneslice_selectedmaps('{maps_folder}','{subject}',i,maps_name,1,1,1,jpg_path);
 end
 """
-DICOM_SCAN_TYPE = ['SWITCH DB TO YES b3000_80', 'b3000_80']
+DICOM_SCAN_TYPE = ['WIP b3000_90 SENSE', 'SWITCH DB TO YES b3000_80',
+                   'b3000_80']
 INDEX = {}
 ORDER_MAPS = ['FIT_fIC', 'FIT_cellularity',
               'FIT_fEES', 'FIT_fVASC', 'FIT_R',

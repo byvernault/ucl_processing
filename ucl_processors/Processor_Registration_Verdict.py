@@ -29,9 +29,9 @@ ucl_spiders/Spider_Registration_Verdict_v1_0_0.py')
 DEFAULT_WALLTIME = '02:00:00'
 DEFAULT_MEM = 3048
 DEFAULT_PPN = 4
-DEFAULT_VERDICT_MODALITIES = ['SWITCH DB TO YES b3000_80', 'b3000_80',
-                              'b2000_vx1.3', 'b1500_vx1.3', 'b500_vx1.3',
-                              'b90_vx1.3']
+DEFAULT_VERDICT_MODALITIES = [
+    'WIP b3000_90 SENSE', 'SWITCH DB TO YES b3000_80', 'b3000_80',
+    'b2000_vx1.3', 'b1500_vx1.3', 'b500_vx1.3', 'b90_vx1.3']
 DEFAULT_REG_ALADIN = '/share/apps/cmic/niftypipe_deps/bin/reg_aladin'
 DEFAULT_REG_RESAMPLE = '/share/apps/cmic/niftypipe_deps/bin/reg_resample'
 DEFAULT_ARGS_REG_ALADIN = " -rigOnly "
