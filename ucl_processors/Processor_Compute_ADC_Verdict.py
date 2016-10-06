@@ -1,10 +1,10 @@
-"""Processor associated to Spider_Verdict.
+"""Processor associated to Spider_Compute_ADC_Verdict.
 
 Author:         Benjamin Yvernault
 contact:        b.yvernault@ucl.ac.uk
-Processor name: Processor_Verdict
+Processor name: Processor_Compute_ADC_Verdict
 Creation date:  2016-08-18 13:14:30.689905
-Purpose:        Generate Verdict Map from all Verdict scans
+Purpose:        Generate ADC map from Verdict registered scans
 """
 
 # Python packages import
@@ -14,7 +14,7 @@ from dax import XnatUtils, SessionProcessor
 
 __author__ = "Benjamin Yvernault"
 __email__ = "b.yvernault@ucl.ac.uk"
-__purpose__ = "Generate Verdict Map from all Verdict scans"
+__purpose__ = "Generate ADC map from Verdict registered scans"
 __processor_name__ = "Processor_Verdict"
 __modifications__ = """2016-08-18 13:14:30.689905 - Original write"""
 
@@ -25,21 +25,17 @@ LOGGER = logging.getLogger('dax')
 # EDIT PARAMETERS FOR YOUR SPIDER CASE (SPIDER_PATH, WALLTIME, etc...)
 HOME = os.path.expanduser("~")
 DEFAULT_SPIDER_PATH = os.path.join(HOME, 'Xnat-management/ucl_processing/\
-ucl_spiders/', 'Spider_Verdict_v1_0_0.py')
-DEFAULT_WALLTIME = '08:00:00'
-DEFAULT_MEM = 8048
+ucl_spiders/', 'Spider_Compute_ADC_Verdict_v1_0_0.py')
+DEFAULT_WALLTIME = '01:00:00'
+DEFAULT_MEM = 6048
 DEFAULT_PROCTYPE = 'Registration_Verdict_v1'
 DEFAULT_MATLAB_CODE = os.path.join(HOME, 'Code', 'matlab')
-DEFAULT_AMICO = os.path.join(HOME, 'Code', 'AMICO', 'matlab')
-DEFAULT_CAMINO = os.path.join(HOME, 'Code', 'caminoLaura', 'bin')
-DEFAULT_SPAMS = os.path.join(HOME, 'Code', 'spams-matlab')
+DEFAULT_CAMINO = os.path.join(HOME, 'Code', 'caminoLaura')
 DEFAULT_VERDICT_MODALITIES = [
     'WIP b3000_90 SENSE', 'SWITCH DB TO YES b3000_80', 'b3000_80',
     'b2000_vx1.3', 'b1500_vx1.3', 'b500_vx1.3', 'b90_vx1.3']
 DEFAULT_SCHEME_FILE = os.path.join(DEFAULT_MATLAB_CODE,
-                                   'NOptimisedV_IN.scheme')
-VERDICT_SUBJ_SCHEME_FILE = os.path.join(DEFAULT_MATLAB_CODE,
-                                        'NOptimisedV.scheme')
+                                   'NOptimisedADC_IN.scheme')
 
 # Format for the spider command line
 SPIDER_FORMAT = """python {spider} \
@@ -51,14 +47,12 @@ SPIDER_FORMAT = """python {spider} \
 --proctype {proctype} \
 --nbAcq {nb_acq} \
 --mc {mc} \
---amico {amico} \
 --camino {camino} \
---spams {spams} \
 --scheme {scheme} \
 """
 
 
-class Processor_Verdict(SessionProcessor):
+class Processor_Compute_ADC_Verdict(SessionProcessor):
     """Processor class for Verdict that runs on a session.
 
     :param spider_path: spider path on the system
@@ -72,20 +66,17 @@ class Processor_Verdict(SessionProcessor):
     def __init__(self, spider_path=DEFAULT_SPIDER_PATH, version=None,
                  scan_modalities=DEFAULT_VERDICT_MODALITIES,
                  proctype=DEFAULT_PROCTYPE, matlab_code=DEFAULT_MATLAB_CODE,
-                 amico=DEFAULT_AMICO, camino=DEFAULT_CAMINO,
-                 spams=DEFAULT_SPAMS, walltime=DEFAULT_WALLTIME,
+                 camino=DEFAULT_CAMINO, walltime=DEFAULT_WALLTIME,
                  mem_mb=DEFAULT_MEM,  suffix_proc=''):
         """Entry point for Processor_Verdict Class."""
-        super(Processor_Verdict,
+        super(Processor_Compute_ADC_Verdict,
               self).__init__(walltime, mem_mb, spider_path, version,
                              suffix_proc=suffix_proc)
         self.modalities = XnatUtils.get_input_list(scan_modalities,
                                                    DEFAULT_VERDICT_MODALITIES)
         self.proctype = proctype
         self.mc = matlab_code
-        self.amico = amico
         self.camino = camino
-        self.spams = spams
 
     def has_inputs(self, csess):
         """Method overridden from base class.
@@ -151,10 +142,7 @@ cannot run, no ACQ resource found for %s assessor',
         if XnatUtils.has_resource(reg_verdict, 'ACQ2'):
             nb_acq = 2
 
-        if subj_label.startswith('VERDICT-'):
-            scheme_file = VERDICT_SUBJ_SCHEME_FILE
-        else:
-            scheme_file = DEFAULT_SCHEME_FILE
+        scheme_file = DEFAULT_SCHEME_FILE
 
         cmd = SPIDER_FORMAT.format(spider=self.spider_path,
                                    proj=proj_label,
@@ -164,9 +152,7 @@ cannot run, no ACQ resource found for %s assessor',
                                    nb_acq=nb_acq,
                                    proctype=self.proctype,
                                    mc=self.mc,
-                                   amico=self.amico,
                                    camino=self.camino,
-                                   spams=self.spams,
                                    scheme=scheme_file,
                                    suffix_proc=self.suffix_proc)
 
