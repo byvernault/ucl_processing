@@ -15,7 +15,6 @@ import dicom
 import datetime
 import numpy as np
 import nibabel as nib
-from dicom.sequence import Sequence
 from dicom.dataset import Dataset, FileDataset
 from dax import XnatUtils, spiders, SessionSpider
 
