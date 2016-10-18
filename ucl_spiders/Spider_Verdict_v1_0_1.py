@@ -40,9 +40,10 @@ launch_AMICO_for_INNOVATE('{input_path}',\
 '{scheme_filename}');
 """
 NII2DICOM = """
+addpath(genpath('{matlab_code}'));
 nifti_folder = '{maps_folder}';
 dicom_file = '{dicom_file}';
-matlab_code = '{matlab_code}';
+matlab_code = '{matlab_code}/ext';
 out_folder = '{out_folder}';
 nb_acq = {acq};
 
