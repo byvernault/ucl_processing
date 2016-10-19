@@ -231,6 +231,8 @@ class Spider_Verdict(SessionSpider):
                     acq=str(nb_acq))
             nii2dcm_script = os.path.join(output_folder,
                                           'run_nii2dcm_%d.m' % nb_acq)
+            with open(nii2dcm_script, "w") as f:
+                f.writelines(mat_lines)
             XnatUtils.run_matlab(nii2dcm_script, verbose=True)
 
         # Make pdf:
