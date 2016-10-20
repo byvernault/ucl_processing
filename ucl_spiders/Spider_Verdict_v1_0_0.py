@@ -391,8 +391,7 @@ def write_dicom(pixel_array, filename, ds_ori,
     ds.SeriesDescription = series_description
     ds.AcquisitionNumber = 1
     ds.SamplesperPixel = 1
-    ds.PhotometricInterpretation = 'RGB'
-    # ds.PhotometricInterpretation = 'MONOCHROME2'
+    ds.PhotometricInterpretation = 'MONOCHROME2'
     ds.SecondaryCaptureDeviceManufctur = 'Python 2.7.3'
     nb_frames = pixel_array.shape[2]*pixel_array.shape[3]
     ds.NumberOfFrames = nb_frames
