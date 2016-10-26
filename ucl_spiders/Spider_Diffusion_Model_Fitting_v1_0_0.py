@@ -126,19 +126,9 @@ class Spider_Diffusion_Model_Fitting(SessionSpider):
         self.fmagni = fmagni
         self.fphase = fphase
         self.number_core = number_core
-        # Print version for Niftyreg  (NOT CHECKED EXCEPT REG_ALADIN)
-        # List of the binaries necessary for this pipeline:
-        # * FSL: fslmaths, fslmerge, fslsplit
-        # * niftyreg: reg_aladin, reg_transform, reg_f3d, reg_resample
-        # * niftyseg: seg_maths
-        # * niftyfit: fit_dwi, dwi_tool
-        # * susceptibility: pm_scale, gen_fm, gen_pm, phase_unwrap
-        exe_call = sb.Popen(['reg_aladin', '--version'],
-                            stdout=sb.PIPE,
-                            stderr=sb.PIPE)
-        exe_version, _ = exe_call.communicate()
-        self.time_writer('Niftyreg version: %s' % (exe_version.strip()))
-        self.time_writer('GIF version: 3a76a255ab')
+        self.check_executable('reg_aladin', 'reg_aladin')
+        self.pdf_final = os.path.join(self.jobdir,
+                                      'Diffusion_Model_Fitting.pdf')
 
     def pre_run(self, argument_parse):
         """Method to download data from XNAT.

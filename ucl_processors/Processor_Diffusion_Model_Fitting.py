@@ -29,12 +29,13 @@ HOME = os.path.expanduser("~")
 DEFAULT_SPIDER_PATH = os.path.join(HOME, 'Xnat-management/ucl_processing/\
 ucl_spiders/Spider_Diffusion_Model_Fitting_v1_0_0.py')
 DEFAULT_WALLTIME = '10:00:00'
-DEFAULT_MEM = 3096
+DEFAULT_MEM = 4096
 DEFAULT_PPN = 4
 DEFAULT_DTI_TYPES = ['DTI', 'DWI']
 DEFAULT_T1_TYPES = ['T1', 'MPRAGE']
 DEFAULT_GIF_TYPE = ['GIF_Parcellation_v1']
-DEFAULT_DTI_PATH = '/share/apps/cmic/niftypipe/bin/perform_dti_processing.py'
+DEFAULT_DTI_PATH = os.path.join(HOME,
+                                'anaconda/bin/perform_dti_processing.py')
 DEFAULT_DTI_ARGS = "--rot 34.56 --etd 2.46 --ped -y"
 DEFAULT_WORKING_DIR = '/scratch0/dax/'
 
