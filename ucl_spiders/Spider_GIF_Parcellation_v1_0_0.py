@@ -37,7 +37,8 @@ GIF_CMD = """{exe_path} \
 --no_qsub \
 --openmp_core {number_core} \
 --n_procs 1 \
---working_dir '{working_dir}'"""
+--working_dir '{working_dir}'\
+--remove_tmp"""
 
 
 def parse_args():
