@@ -11,13 +11,7 @@ Purpose:        Parcellation of the brain using GIF: Geodesic Information Flow.
 # Python packages import
 import os
 import sys
-import csv
 import glob
-import numpy as np
-import nibabel as nib
-from datetime import datetime
-import matplotlib.pyplot as plt
-from collections import OrderedDict
 from dax import spiders, ScanSpider
 
 __author__ = "Benjamin Yvernault"
@@ -37,7 +31,8 @@ GIF_CMD = """{exe_path} \
 --no_qsub \
 --openmp_core {number_core} \
 --n_procs 1 \
---working_dir '{working_dir}' 
+--working_dir '{working_dir}' \
+--remove_tmp
 """
 
 
@@ -168,7 +163,7 @@ class Spider_GIF_Parcellation(ScanSpider):
                         'PRIOR': prior,
                         'SEG': seg,
                         'TIV': tiv,
-                        'STATS':volumes}
+                        'STATS': volumes}
         self.upload_dict(results_dict)
         self.end()
 
@@ -193,8 +188,6 @@ class Spider_GIF_Parcellation(ScanSpider):
         seg = glob.glob(os.path.join(out_dir, '*seg.nii.gz'))
         tiv = glob.glob(os.path.join(out_dir, '*tiv.nii.gz'))
         list_images = [bias_corrected, brain, labels, seg, tiv, prior]
-        # Volumes:
-        volumes = glob.glob(os.path.join(out_dir, '*volumes.xml'))
 
         # Page 1:
         images = []
@@ -225,7 +218,8 @@ class Spider_GIF_Parcellation(ScanSpider):
                               image_labels=labels, cmap=cmap)
 
         # Page 2
-	"""print volumes
+        """ # Volumes:
+        volumes = glob.glob(os.path.join(out_dir, '*volumes.xml'))
         if len(volumes) != 1:
             err = '%s output csv file with information on volumes not found \
 or more than one file found.'
@@ -242,12 +236,12 @@ or more than one file found.'
         self.plot_stats_page(pdf_pages['2'], 2, di_stats,
                              'Volumes computed by GIF_Parcellation',
                              columns_header=['Label Name', 'Volume'])
-	
+
         # Join the two pages for the PDF:
         self.merge_pdf_pages(pdf_pages, self.pdf_final)
-	"""
+        """
+        os.rename(pdf_pages['1'], self.pdf_final)
 
-	os.rename(pdf_pages['1'], self.pdf_final)
 
 if __name__ == '__main__':
     # arguments
