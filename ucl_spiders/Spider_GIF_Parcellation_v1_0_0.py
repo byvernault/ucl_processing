@@ -367,7 +367,6 @@ Using default.")
                     horizontalalignment='center', fontsize=12)
         plt.figtext(0.5, 0.02, 'Date: %s -- page %d' % (str(date), page_index),
                     horizontalalignment='center', fontsize=8)
-        plt.show()
         fig.savefig(pdf_path, transparent=True, orientation='portrait',
                     dpi=100)
         plt.close(fig)
@@ -431,7 +430,6 @@ Using default.")
                     horizontalalignment='center', fontsize=12)
         plt.figtext(0.5, 0.02, 'Date: %s -- page %d' % (str(date), page_index),
                     horizontalalignment='center', fontsize=8)
-        plt.show()
         fig.savefig(pdf_path, transparent=True, orientation='portrait',
                     dpi=300)
         plt.close(fig)
