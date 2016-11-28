@@ -280,6 +280,7 @@ or more than one file found.'
         vmaxs = {'0':100,
                  '1':150}
         """
+        plt.ioff()
         self.time_writer('INFO: generating pdf page %d with images.'
                          % page_index)
         fig = plt.figure(page_index, figsize=(7.5, 10))
@@ -393,6 +394,7 @@ Using default.")
         :param limit_size_text_column2: limit of text display in column 2
         :return: pdf path created
         """
+        plt.ioff()
         self.time_writer('INFO: generating pdf page %d with stats.'
                          % page_index)
         cell_text = list()
