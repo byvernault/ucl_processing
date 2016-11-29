@@ -280,6 +280,7 @@ or more than one file found.'
         vmaxs = {'0':100,
                  '1':150}
         """
+        plt.ioff()
         self.time_writer('INFO: generating pdf page %d with images.'
                          % page_index)
         fig = plt.figure(page_index, figsize=(7.5, 10))
@@ -367,7 +368,6 @@ Using default.")
                     horizontalalignment='center', fontsize=12)
         plt.figtext(0.5, 0.02, 'Date: %s -- page %d' % (str(date), page_index),
                     horizontalalignment='center', fontsize=8)
-        plt.show()
         fig.savefig(pdf_path, transparent=True, orientation='portrait',
                     dpi=100)
         plt.close(fig)
@@ -394,6 +394,7 @@ Using default.")
         :param limit_size_text_column2: limit of text display in column 2
         :return: pdf path created
         """
+        plt.ioff()
         self.time_writer('INFO: generating pdf page %d with stats.'
                          % page_index)
         cell_text = list()
@@ -431,7 +432,6 @@ Using default.")
                     horizontalalignment='center', fontsize=12)
         plt.figtext(0.5, 0.02, 'Date: %s -- page %d' % (str(date), page_index),
                     horizontalalignment='center', fontsize=8)
-        plt.show()
         fig.savefig(pdf_path, transparent=True, orientation='portrait',
                     dpi=300)
         plt.close(fig)
