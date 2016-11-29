@@ -12,6 +12,8 @@ Purpose:        Parcellation of the brain using GIF: Geodesic Information Flow.
 import os
 import sys
 import glob
+import xml.etree.ElementTree as ET
+from collections import OrderedDict
 from dax import spiders, ScanSpider
 
 __author__ = "Benjamin Yvernault"
@@ -218,29 +220,28 @@ class Spider_GIF_Parcellation(ScanSpider):
                               image_labels=labels, cmap=cmap)
 
         # Page 2
-        """ # Volumes:
+        # Volumes:
         volumes = glob.glob(os.path.join(out_dir, '*volumes.xml'))
         if len(volumes) != 1:
             err = '%s output csv file with information on volumes not found \
 or more than one file found.'
             raise Exception(err % (volumes))
-        with open(volumes[0], 'rb') as csvfileread:
-            csvreader = csv.reader(csvfileread, delimiter=',')
-            li_name = csvreader.next()
-            li_volume = csvreader.next()
-
+        tree = ET.parse(volumes[0])
+        root = tree.getroot()
         di_stats = OrderedDict()
-        for index, name in enumerate(li_name):
-            di_stats[name] = li_volume[index]
+        for tissue in root.findall('tissues'):
+            for item in tissue.findall('item'):
+                di_stats[item.find('name').text] = item.find('volumeProb').text
+        for tissue in root.findall('labels'):
+            for item in tissue.findall('item'):
+                di_stats[item.find('name').text] = item.find('volumeProb').text
 
         self.plot_stats_page(pdf_pages['2'], 2, di_stats,
                              'Volumes computed by GIF_Parcellation',
-                             columns_header=['Label Name', 'Volume'])
+                             columns_header=['Label Name', 'Volume ml'])
 
         # Join the two pages for the PDF:
         self.merge_pdf_pages(pdf_pages, self.pdf_final)
-        """
-        os.rename(pdf_pages['1'], self.pdf_final)
 
 
 if __name__ == '__main__':
