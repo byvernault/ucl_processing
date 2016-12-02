@@ -36,6 +36,8 @@ compute_ADC_VERDICT('{input_path}',\
 """
 DICOM_SCAN_TYPE = ['WIP b3000_90 SENSE', 'SWITCH DB TO YES b3000_80',
                    'b3000_80']
+TAGS_TO_COPY = ['MediaStorageSOPClassUID', 'InstanceCreatorUID',
+                'SOPClassUID']
 
 
 def parse_args():
@@ -183,7 +185,10 @@ class Spider_Comput_ADC_Verdict(SessionSpider):
                 out_nii,
                 sour_obj,
                 osirix_folder,
-                nb_acq)
+                nb_acq,
+                self.xnat_project,
+                self.xnat_subject,
+                self.xnat_session)
 
             # Gzip nii:
             XnatUtils.gzip_nii(folder)
@@ -259,7 +264,8 @@ class Spider_Comput_ADC_Verdict(SessionSpider):
 
 
 def write_dicom(pixel_array, filename, ds_ori,
-                series_number, sop_id, series_description):
+                series_number, sop_id, nb_acq,
+                project, subject, session):
     """Write a dicom from a pixel_array (numpy).
 
     :param pixel_array: 2D numpy ndarray.
@@ -268,19 +274,24 @@ def write_dicom(pixel_array, filename, ds_ori,
     :param ds_ori: original pydicom object of the pixel_array
     :param series_number: number of the series being processed
     :param sop_id: SOPInstanceUID for the DICOM
-    :param series_description: series description for Osirix display
+    :param nb_acq: acquisition number
+    :param project: project name on XNAT
+    :param subject: subject name on XNAT
+    :param session: session name on XNAT
     """
     # Set the DICOM dataset
     file_meta = Dataset()
     file_meta.MediaStorageSOPClassUID = 'Secondary Capture Image Storage'
     file_meta.MediaStorageSOPInstanceUID = ds_ori.SOPInstanceUID
-    file_meta.ImplementationClassUID = ds_ori.SOPClassUID
+    file_meta.ImplementationClassUID = ds_ori.file_meta.ImplementationClassUID
     ds = FileDataset(filename, {}, file_meta=file_meta, preamble="\0"*128)
 
-    # Copy the tag from the original DICOM
-    for tag, d_obj in ds_ori.items():
-        if tag != ds_ori.data_element("PixelData").tag:
-            ds[tag] = d_obj
+    # Copy UID from dicom
+    ds.InstanceCreatorUID = ds_ori.InstanceCreatorUID
+    ds.SOPClassUID = ds_ori.SOPClassUID
+    ds.ReferencedStudySequence = ds_ori.ReferencedStudySequence
+    ds.StudyInstanceUID = ds_ori.StudyInstanceUID
+    ds.SeriesInstanceUID = ds_ori.SeriesInstanceUID
 
     # Other tags to set
     ds.SeriesNumber = series_number
@@ -289,14 +300,16 @@ def write_dicom(pixel_array, filename, ds_ori,
                                                    .replace('.', '')\
                                                    .replace(' ', '')
     ds.SOPInstanceUID = sop_uid[:-1]
-    ds.ProtocolName = '%s Verdict' % series_description
+    ds.ProtocolName = 'ADC Map %d' % nb_acq
+    ds.SeriesDescription = 'ADC Map %d' % nb_acq
+    ds.PatientName = subject
+    ds.PatientID = session
     # Set SeriesDate/ContentDate
     now = datetime.date.today()
     ds.SeriesDate = '%d%02d%02d' % (now.year, now.month, now.day)
     ds.ContentDate = '%d%02d%02d' % (now.year, now.month, now.day)
     ds.Modality = 'MR'
-    ds.StudyDescription = 'INNOVATE'
-    ds.SeriesDescription = series_description
+    ds.StudyDescription = project
     ds.AcquisitionNumber = 1
     ds.SamplesperPixel = 1
     ds.PhotometricInterpretation = 'MONOCHROME2'
@@ -327,20 +340,23 @@ def write_dicom(pixel_array, filename, ds_ori,
     ds.save_as(filename)
 
 
-def convert_nifti_2_dicoms(nifti_file, sour_obj, output_folder, nbacq):
+def convert_nifti_2_dicoms(nifti_file, sour_obj, output_folder, nbacq,
+                           project, subject, session):
     """Convert 3D niftis into DICOM files.
 
     :param nifti_file: path to the nifti file
     :param sour_obj: pydicom object for the source dicom
     :param output_folder: folder where the DICOM files will be saved
     :param nbacq: Acquisition number
+    :param project: project name on XNAT
+    :param subject: subject name on XNAT
+    :param session: session name on XNAT
     :return: None
     """
     if not os.path.isfile(nifti_file):
         raise Exception("NIFTY file %s not found." % nifti_file)
     # Naming
-    label = os.path.basename(nifti_file)[:-4]
-    series_description = '%s_%d_original' % (label, nbacq)
+    filename = 'ADC_MAP_%d_original' % nbacq
 
     # Edit Niftys
     f_img = nib.load(nifti_file)
@@ -349,10 +365,8 @@ def convert_nifti_2_dicoms(nifti_file, sour_obj, output_folder, nbacq):
     f_data = np.rot90(f_data)
     f_data = np.rot90(f_data)
     f_data = np.rot90(f_data)
-    # Scale numbers to uint8
-    # f_data = (f_data - f_data.min())*255.0/(f_data.max() - f_data.min())
     # Normalizing data:
-    dmin = 0
+    dmin = 0.0
     dmax = 5*10**-9
     f_data[f_data < dmin] = dmin
     f_data[f_data > dmax] = dmax
@@ -373,9 +387,10 @@ def convert_nifti_2_dicoms(nifti_file, sour_obj, output_folder, nbacq):
     sop_id = '.'.join(sop_id[:-1])+'.'
 
     # Write the dicom
-    filename = os.path.join(output_folder, '%s.dcm' % series_description)
+    filename = os.path.join(output_folder, '%s.dcm' % filename)
     write_dicom(f_data, filename, sour_obj,
-                series_number, sop_id, series_description)
+                series_number, sop_id, nbacq,
+                project, subject, session)
 
 
 if __name__ == '__main__':
