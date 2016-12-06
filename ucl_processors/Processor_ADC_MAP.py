@@ -10,7 +10,7 @@ Purpose:        Generate ADC map from Verdict registered scans
 # Python packages import
 import os
 import logging
-from dax import XnatUtils, SessionProcessor
+from dax import XnatUtils, ScanProcessor
 
 __author__ = "Benjamin Yvernault"
 __email__ = "b.yvernault@ucl.ac.uk"
@@ -29,9 +29,7 @@ ucl_spiders/', 'Spider_ADC_MAP_v1_0_0.py')
 DEFAULT_WALLTIME = '00:30:00'
 DEFAULT_MEM = 6048
 DEFAULT_MATLAB_CODE = os.path.join(HOME, 'Code', 'matlab')
-DEFAULT_SCAN_TYPES = [
-    'WIP b3000_90 SENSE', 'SWITCH DB TO YES b3000_80', 'b3000_80',
-    'b2000_vx1.3', 'b1500_vx1.3', 'b500_vx1.3', 'b90_vx1.3']
+DEFAULT_SCAN_TYPES = ['ep2d_DWI_ax_high_res']
 
 # Format for the spider command line
 SPIDER_FORMAT = """python {spider} \
@@ -45,7 +43,7 @@ SPIDER_FORMAT = """python {spider} \
 """
 
 
-class Processor_ADC_MAP(SessionProcessor):
+class Processor_ADC_MAP(ScanProcessor):
     """Processor class for Verdict that runs on a session.
 
     :param spider_path: spider path on the system
