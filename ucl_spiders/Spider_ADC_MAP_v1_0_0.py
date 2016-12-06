@@ -99,6 +99,7 @@ class Spider_ADC_MAP(ScanSpider):
         input_dir = XnatUtils.makedir(os.path.join(self.jobdir, 'inputs'))
         self.inputs.extend(self.download(self.xnat_scan, resource, input_dir))
         if len(self.inputs) == 1 and self.inputs[0].endswith('.zip'):
+            self.time_writer('Unzipping the dicoms...')
             os.system('unzip -d %s -j %s > /dev/null'
                       % (input_dir, self.inputs[0]))
             os.remove(self.inputs[0])
@@ -107,6 +108,7 @@ class Spider_ADC_MAP(ScanSpider):
     def run(self):
         """Method running the process for the spider on the inputs data."""
         output_folder = XnatUtils.makedir(os.path.join(self.jobdir, 'outputs'))
+        self.time_writer('Dicom folder: %s' % os.path.dirname(self.inputs[0]))
         mat_lines = DEFAULT_ADC_TEMPLATE.format(
                 matlab_code=self.matlab_code,
                 input_path=os.path.dirname(self.inputs[0]),
