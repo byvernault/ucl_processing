@@ -292,6 +292,8 @@ class Spider_Registration_Verdict(SessionSpider):
                   '2': list_slices,
                   '3': list_slices,
                   '4': list_slices}
+        print self.acquisitions
+        print self.jobdir
         for i in range(1, len(self.acquisitions.keys()) + 1):
             images = list()
             labels = dict()
@@ -307,7 +309,7 @@ class Spider_Registration_Verdict(SessionSpider):
 
             self.plot_images_page(pdf_page, page_number, images,
                                   pdf_title % (i+1), image_labels=labels,
-                                  slices=slices, volume_ind=0)
+                                  slices=slices)
             pdf_pages[page_number] = pdf_page
             page_number += 1
         # Merge pages:

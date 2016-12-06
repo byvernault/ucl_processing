@@ -12,6 +12,7 @@ Purpose:        Generate ADC from Verdict files after registration.
 import os
 import sys
 import dicom
+import shutil
 import datetime
 import numpy as np
 import nibabel as nib
@@ -172,7 +173,11 @@ class Spider_Comput_ADC_Verdict(SessionSpider):
             self.run_matlab(matlab_script, verbose=True)
 
             # Generate Dicom for OsiriX
-            out_nii = os.path.join(folder, 'FIT_ADC.nii')
+            res_nii = os.path.join(folder, 'FIT_ADC.nii')
+            out_nii = os.path.join(folder,
+                                   '%s_FIT_ADC_%d.nii' % (self.xnat_session,
+                                                          nb_acq))
+            shutil.move(res_nii, out_nii)
 
             # Load dicom headers
             if not os.path.isfile(self.inputs['dcm']):
@@ -215,10 +220,13 @@ class Spider_Comput_ADC_Verdict(SessionSpider):
         labels = {'0': 'ADC Acquisition 1'}
         vmins = {'0': 0}
         vmaxs = {'0': 5*10**-9}
-        images = [os.path.join(self.jobdir, 'outputs', '1', 'FIT_ADC.nii.gz')]
+        nii = os.path.join(self.jobdir, 'outputs', '1',
+                           '%s_FIT_ADC_1.nii.gz' % self.xnat_session)
+        images = [nii]
         if self.nb_acquisition == 2:
-            images.append(os.path.join(self.jobdir, 'outputs', '2',
-                                       'FIT_ADC.nii.gz'))
+            images.append(os.path.join(
+                               self.jobdir, 'outputs', '2',
+                               '%s_FIT_ADC_2.nii.gz' % self.xnat_session))
             labels['1'] = 'ADC Acquisition 2'
             slices['1'] = list_slices
             vmins['1'] = 0
@@ -235,7 +243,9 @@ class Spider_Comput_ADC_Verdict(SessionSpider):
         for nb_acq in range(1, self.nb_acquisition+1):
             acq_folder = os.path.join(self.jobdir, 'outputs', str(nb_acq))
             res = 'ADC%d' % nb_acq
-            results_dict[res] = os.path.join(acq_folder, 'FIT_ADC.nii.gz')
+            results_dict[res] = os.path.join(
+                    acq_folder, '%s_FIT_ADC_%d.nii.gz' % (self.xnat_session,
+                                                          nb_acq))
             files = [os.path.join(acq_folder, 'prepareADC.Bfloat'),
                      os.path.join(acq_folder, 'temporalADC.Bfloat'),
                      os.path.join(acq_folder, 'run_matlab_verdict.m')]
@@ -289,7 +299,7 @@ def write_dicom(pixel_array, filename, ds_ori,
     # Copy UID from dicom
     ds.InstanceCreatorUID = ds_ori.InstanceCreatorUID
     ds.SOPClassUID = ds_ori.SOPClassUID
-    ds.ReferencedStudySequence = ds_ori.ReferencedStudySequence
+    # ds.ReferencedStudySequence = ds_ori.ReferencedStudySequence
     ds.StudyInstanceUID = ds_ori.StudyInstanceUID
     ds.SeriesInstanceUID = ds_ori.SeriesInstanceUID
 
