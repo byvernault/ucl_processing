@@ -29,7 +29,7 @@ ucl_spiders/', 'Spider_ADC_MAP_v1_0_0.py')
 DEFAULT_WALLTIME = '00:30:00'
 DEFAULT_MEM = 6048
 DEFAULT_MATLAB_CODE = os.path.join(HOME, 'Code', 'matlab')
-DEFAULT_SCAN_TYPES = ['ep2d_DWI_ax_high_res']
+DEFAULT_SCAN_TYPES = ['ep2d_DWI_ax_high_res$']
 
 # Format for the spider command line
 SPIDER_FORMAT = """python {spider} \
