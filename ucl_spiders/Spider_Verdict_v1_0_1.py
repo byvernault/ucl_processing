@@ -13,8 +13,6 @@ Purpose:        Generate Verdict Map from all Verdict scans registered \
 import os
 import sys
 import shutil
-import numpy as np
-import nibabel as nib
 from dax import XnatUtils, spiders, SessionSpider
 
 __author__ = "Benjamin Yvernault"
