@@ -246,7 +246,11 @@ class Spider_Verdict(SessionSpider):
         os.chdir(initdir)
 
         # Gzip nii:
-        XnatUtils.gzip_nii(outdir)
+        XnatUtils.gzip_nii(os.path.join(output_folder, '1', 'AMICO',
+                           'VerdictProstate_Rmaps'))
+        if self.nb_acquisition == 2:
+            XnatUtils.gzip_nii(os.path.join(output_folder, '2', 'AMICO',
+                                            'VerdictProstate_Rmaps'))
 
     def make_pdf(self):
         """Method to make the PDF for the spider.
