@@ -150,7 +150,8 @@ class Spider_Sample_GM_Segment(ScanSpider):
                   os.path.join(folder, 'c3%s' % in_filename),
                   os.path.join(folder, 'm%s' % in_filename)]
         self.plot_images_page(self.pdf_final, 1, images,
-                              pdf_title, slices=slices, image_labels=labels)
+                              pdf_title, slices=slices, image_labels=labels,
+                              orient='ax')
 
     def finish(self):
         """Method to copy the results in dax.RESULTS_DIR."""
