@@ -22,6 +22,11 @@ __version__ = "1.0.0"
 __modifications__ = """2016-12-08 11:41:14.210326 - Original write"""
 
 
+BAMOS_DEFAULT = '/home/dax/Code/scripts/bash/BaMoSGenericDax.sh'
+GMATRIX_DEFAULT = '/cluster/project0/SegBiASM/DataToTryBaMoS/GMatrix4_Low3.txt'
+RULE_DEFAULT = '/cluster/project0/SegBiASM/DataToTryBaMoS/GenericRule_CSF.txt'
+SEG_BIASM = '/home/csudre/NiftySeg_0.9.4/build_comic2/seg-apps/Seg_BiASM'
+SEG_ANALYSIS = '/home/csudre/NiftySeg_0.9.4/build_comic2/seg-apps/Seg_Analysis'
 TEMPLATE_SH = """
 export arrayMod={array}
 export Do2=1
@@ -38,6 +43,12 @@ export OptSP=1
 export OptTA=1
 export PN={session}
 export PathID={dir}
+export SEG_BIASM={seg_biasm}
+export SEG_ANALYSIS={seg_analysis}
+export REGPATH={reg_path}
+export SEGPATH={seg_path}
+export FSLPATH={fsl_path}
+export ICBMPATH={icbm}
 """
 
 
@@ -69,7 +80,7 @@ def parse_args():
     :return: argument parser object created by parse_args()
     """
     ap = spiders.get_session_argparser("BaMoS", __purpose__)
-    ap.add_argument("--bamos", dest="bamos", required=True,
+    ap.add_argument("--bamos", dest="bamos", default=BAMOS_DEFAULT,
                     help="BaMoS bash script path.")
     ap.add_argument("--t1", dest="t1", required=True,
                     help="T1 scan ID on XNAT.")
@@ -77,20 +88,20 @@ def parse_args():
                     help="GIF proctype on XNAT.")
     ap.add_argument("--flair", dest="flair", required=True,
                     help="Flair scan ID on XNAT.")
-    ap.add_argument("--t2", dest="rulefile", default=None,
+    ap.add_argument("--t2", dest="t2", default=None,
                     help="T2 scan ID on XNAT. (optional)")
-    ap.add_argument("--gmatrix", dest="gmatrix", required=True,
+    ap.add_argument("--gmatrix", dest="gmatrix", default=GMATRIX_DEFAULT,
                     help="File defining the g-matrix.")
-    ap.add_argument("--rules", dest="rulefile", required=True,
+    ap.add_argument("--rules", dest="rulefile", default=RULE_DEFAULT,
                     help="File defining the rules.")
     ap.add_argument("--regfolder", dest="regfolder", default=None,
                     help="Folder containing the reg_ executables.")
     ap.add_argument("--segfolder", dest="segfolder", default=None,
                     help="Folder containing the seg_ executables.")
-    ap.add_argument("--seg_biasm", dest="seg_biasm", default='Seg_BiASM',
+    ap.add_argument("--seg_biasm", dest="seg_biasm", default=SEG_BIASM,
                     help="Path to executable Seg_BiASM.")
     ap.add_argument("--seg_analysis", dest="seg_analysis",
-                    default='Seg_Analysis',
+                    default=SEG_ANALYSIS,
                     help="Path to executable Seg_Analysis.")
     return ap.parse_args()
 
@@ -124,7 +135,7 @@ class Spider_BaMoS(SessionSpider):
                  xnat_project, xnat_subject, xnat_session, bamos,
                  gmatrix, rulefile, t1, gif, flair,
                  t2=None, regfolder=None, segfolder=None,
-                 exe_seg_biasm='Seg_BiASM', exe_seg_analysis='Seg_Analysis',
+                 exe_seg_biasm=SEG_BIASM, exe_seg_analysis=SEG_ANALYSIS,
                  xnat_host=None, xnat_user=None, xnat_pass=None, suffix=""):
         """Entry point for Spider_BaMoS Class."""
         super(Spider_BaMoS,
@@ -155,14 +166,13 @@ class Spider_BaMoS(SessionSpider):
         self.pdf_final = os.path.join(self.jobdir,
                                       '%sBaMoS.pdf' % self.xnat_session)
 
-    def pre_run(self, argument_parse):
+    def pre_run(self):
         """Method to download data from XNAT.
 
         Inputs: T1 with GIF results
                 T2 (optional)
                 Flair (optional)
 
-        :param argument_parse: argument parser object return by parse_args()
         """
         folder = os.path.join(self.jobdir, 'inputs')
         os.makedirs(folder)
@@ -170,19 +180,33 @@ class Spider_BaMoS(SessionSpider):
         os.makedirs(bamos_dir)
         os.makedirs(os.path.join(bamos_dir, 'GIF'))
         # T1:
-        self.inputs['t1'] = self.download(self.t1, 'NIFTI', folder)
+        t1_folder = os.path.join(folder, 't1')
+        os.makedirs(t1_folder)
+        self.inputs['t1'] = self.download(self.t1, 'NIFTI', t1_folder)
         # GIF associated: maybe give SEG as a parameter?
+        gif_label = '-x-'.join([self.xnat_project,
+                                self.xnat_subject,
+                                self.xnat_session,
+                                self.t1,
+                                self.gif])
+        gif_folder = os.path.join(folder, 'gif')
+        os.makedirs(gif_folder)
         self.inputs['gif'] = {}
-        self.inputs['gif']['label'] = self.download(self.gif, 'LABEL', folder)
-        self.inputs['gif']['tiv'] = self.download(self.gif, 'TIV', folder)
-        self.inputs['gif']['prior'] = self.download(self.gif, 'PRIOR', folder)
+        self.inputs['gif']['label'] = self.download(gif_label, 'LABELS',
+                                                    gif_folder)
+        self.inputs['gif']['tiv'] = self.download(gif_label, 'TIV',
+                                                  gif_folder)
+        self.inputs['gif']['prior'] = self.download(gif_label, 'PRIOR',
+                                                    gif_folder)
         # Flair:
-        self.inputs['flair'] = self.download(self.flair, 'NIFTI', folder)
+        flair_folder = os.path.join(folder, 'flair')
+        os.makedirs(flair_folder)
+        self.inputs['flair'] = self.download(self.flair, 'NIFTI', flair_folder)
         # Move inputs:
         shutil.move(self.inputs['t1'][0], os.path.join(
                         bamos_dir, 'T1_%s.nii.gz' % self.xnat_session))
-        shutil.move(self.inputs['t2'][0], os.path.join(
-                        bamos_dir, 'T2_%s.nii.gz' % self.xnat_session))
+        shutil.move(self.inputs['flair'][0], os.path.join(
+                        bamos_dir, 'FLAIR_%s_init.nii.gz' % self.xnat_session))
         filelist = self.inputs['gif']['prior'] + \
             self.inputs['gif']['label'] + \
             self.inputs['gif']['tiv']
@@ -190,16 +214,17 @@ class Spider_BaMoS(SessionSpider):
             shutil.move(fpath, os.path.join(bamos_dir, 'GIF'))
         # T2
         if self.t2:
-            self.inputs['t2'] = self.download(self.t2, 'NIFTI', folder)
+            t2_folder = os.path.join(folder, 't2')
+            os.makedirs(t2_folder)
+            self.inputs['t2'] = self.download(self.t2, 'NIFTI', t2_folder)
             shutil.move(self.inputs['t2'][0], os.path.join(
-                            bamos_dir, 'T2_%s.nii.gz' % self.xnat_session))
+                    bamos_dir, 'T2_%s_init.nii.gz' % self.xnat_session))
 
     def run(self):
         """Method running the process for the spider on the inputs data."""
-        bamos_dir = os.path.join(self.jobdir, self.xnat_session)
-        array = '(T1, FLAIR)'
+        array = '(T1 FLAIR)'
         if self.t2:
-            array = '(T1, FLAIR, T2)'
+            array = '(T1 FLAIR T2)'
         args_str = TEMPLATE_SH.format(
             array=array,
             hast2=1 if self.t2 else 0,
@@ -207,12 +232,19 @@ class Spider_BaMoS(SessionSpider):
             rule=self.rulefile,
             suffix=self.suffix,
             session=self.xnat_session,
-            dir=bamos_dir,
+            dir=self.jobdir,
+            seg_biasm=self.exe_seg_biasm,
+            seg_analysis=self.exe_seg_analysis,
+            reg_path=self.regfolder,
+            seg_path=self.segfolder,
+            fsl_path='/share/apps/fsl-5.0.8/bin',
+            icbm='/cluster/project0/SegBiASM/ICBM_Priors'
         )
-        args_file = os.path.join(self.jobdir, 'argument_BaMoS_%s.sh')
+        args_file = os.path.join(self.jobdir,
+                                 'argument_BaMoS_%s.sh' % self.xnat_session)
         with open(args_file, "w") as f:
             f.writelines(args_str)
-        cmd = "%s %s" % (self.bamos, args_file)
+        cmd = "%s %s sh" % (self.bamos, args_file)
         os.system(cmd)
 
     def finish(self):
@@ -255,7 +287,7 @@ if __name__ == '__main__':
                           "byvernault@ucl.ac.uk")
 
     # Pre-run method to download data from XNAT
-    spider_obj.pre_run(args)
+    spider_obj.pre_run()
 
     # Run method
     spider_obj.run()
