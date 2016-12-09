@@ -231,9 +231,10 @@ class Spider_Comput_ADC_Verdict(SessionSpider):
             slices['1'] = list_slices
             vmins['1'] = 0
             vmaxs['1'] = 5*10**-9
+
         self.plot_images_page(self.pdf_final, 1, images, 'Compute ADC Verdict',
                               image_labels=labels, slices=slices,
-                              vmins=vmins, vmaxs=vmaxs)
+                              vmins=vmins, vmaxs=vmaxs, orient='ax')
 
     def finish(self):
         """Method to copy the results in dax.RESULTS_DIR."""
