@@ -3,7 +3,7 @@
 Author:         Benjamin Yvernault
 contact:        b.yvernault@ucl.ac.uk
 Spider name:    Verdict
-Spider version: 1.0.0
+Spider version: 2.0.0
 Creation date:  2016-08-10 17:48:51.701453
 Purpose:        Generate Verdict Map from all Verdict scans registered \
                 together and merge as one nifti
@@ -20,14 +20,12 @@ __email__ = "b.yvernault@ucl.ac.uk"
 __purpose__ = "Generate Verdict Map from all Verdict scans registered together \
 and merge as one nifti"
 __spider_name__ = "Verdict"
-__version__ = "1.0.1"
-__modifications__ = """2016-08-10 17:48:51.701453 - Original write
-2016-12-13 11:12:22 - Re-organisation of the matlab folder. Removing amico \
-options and having only one matlab call."""
+__version__ = "2.0.0"
+__modifications__ = """2016-12-12 12:03 - Original write"""
 
 
-DEFAULT_MODEL = "VerdictProstate_Rmaps"
-DEFAULT_SCHEME_FILE = "NOptimisedV_IN.scheme"
+DEFAULT_MODEL = "VERDICTPROSTATEuDIFF1"
+DEFAULT_SCHEME_FILE = "NOptimisedV_IN_v2.scheme"
 DEFAULT_VERDICT_TEMPLATE = """
 %% Add path from matlab folder:
 addpath(genpath('{matlab_code}'));
@@ -105,7 +103,7 @@ def parse_args():
                     help="Number of Acquisition of VERDICT scans (1 or 2).")
     ap.add_argument("--mc", dest="matlab_code", default=None, required=True,
                     help="Matlab code folder where is \
-launch_AMICO_for_INNOVATE and AMICO code in a folder AMICO/matlab.")
+launch_AMICO_for_INNOVATE and the AMICO folder.")
     ap.add_argument("--camino", dest="camino", default=None, required=True,
                     help="Path to Camino folder.")
     ap.add_argument("--spams", dest="spams", default=None, required=True,
@@ -114,7 +112,7 @@ launch_AMICO_for_INNOVATE and AMICO code in a folder AMICO/matlab.")
                     help="Path to schemeFilename \
 (NOptimisedV_IN.scheme).")
     ap.add_argument("--model", dest="model", default=DEFAULT_MODEL,
-                    help="Model type for AMICO: VerdictProstate_Rmaps.")
+                    help="Model type for AMICO: VERDICTPROSTATEuDIFF1.")
     return ap.parse_args()
 
 
@@ -134,8 +132,9 @@ class Spider_Verdict(SessionSpider):
     """
 
     def __init__(self, spider_path, jobdir, xnat_project, xnat_subject,
-                 xnat_session, proctype, nb_acquisition, matlab_code,
-                 camino, spams, scheme_filename=None, model=DEFAULT_MODEL,
+                 xnat_session, proctype, nb_acquisition,
+                 matlab_code, camino, spams,
+                 scheme_filename=None, model=DEFAULT_MODEL,
                  xnat_host=None, xnat_user=None, xnat_pass=None,
                  suffix=""):
         """Entry point for Spider_Verdict Class."""

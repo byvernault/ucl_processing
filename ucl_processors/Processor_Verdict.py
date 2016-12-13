@@ -16,7 +16,9 @@ __author__ = "Benjamin Yvernault"
 __email__ = "b.yvernault@ucl.ac.uk"
 __purpose__ = "Generate Verdict Map from all Verdict scans"
 __processor_name__ = "Processor_Verdict"
-__modifications__ = """2016-08-18 13:14:30.689905 - Original write"""
+__modifications__ = """2016-08-18 13:14:30.689905 - Original write
+2016-12-13 10:59:30 - adding scheme file to class and removing amico \
+(in matlab)"""
 
 # set-up logger for printing statements
 LOGGER = logging.getLogger('dax')
@@ -29,17 +31,15 @@ ucl_spiders/', 'Spider_Verdict_v1_0_1.py')
 DEFAULT_WALLTIME = '08:00:00'
 DEFAULT_MEM = 8048
 DEFAULT_PROCTYPE = 'Registration_Verdict_v1'
-DEFAULT_MATLAB_CODE = os.path.join(HOME, 'Code', 'matlab')
-DEFAULT_AMICO = os.path.join(HOME, 'Code', 'AMICO', 'matlab')
+DEFAULT_MATLAB_CODE = os.path.join(HOME, 'Code', 'matlab', 'VERDICT', 'MAPS',
+                                   'v1')
 DEFAULT_CAMINO = os.path.join(HOME, 'Code', 'caminoLaura', 'bin')
 DEFAULT_SPAMS = os.path.join(HOME, 'Code', 'spams-matlab')
 DEFAULT_VERDICT_MODALITIES = [
     'WIP b3000_90 SENSE', 'SWITCH DB TO YES b3000_80', 'b3000_80',
     'b2000_vx1.3', 'b1500_vx1.3', 'b500_vx1.3', 'b90_vx1.3']
-DEFAULT_SCHEME_FILE = os.path.join(DEFAULT_MATLAB_CODE,
-                                   'NOptimisedV_IN.scheme')
-VERDICT_SUBJ_SCHEME_FILE = os.path.join(DEFAULT_MATLAB_CODE,
-                                        'NOptimisedV.scheme')
+DEFAULT_SCHEME_FILE = os.path.join(HOME, 'Code', 'matlab', 'VERDICT',
+                                   'Noptimised', 'NOptimisedV_IN.scheme')
 
 # Format for the spider command line
 SPIDER_FORMAT = """python {spider} \
@@ -72,7 +72,7 @@ class Processor_Verdict(SessionProcessor):
     def __init__(self, spider_path=DEFAULT_SPIDER_PATH, version=None,
                  scan_modalities=DEFAULT_VERDICT_MODALITIES,
                  proctype=DEFAULT_PROCTYPE, matlab_code=DEFAULT_MATLAB_CODE,
-                 amico=DEFAULT_AMICO, camino=DEFAULT_CAMINO,
+                 camino=DEFAULT_CAMINO, scheme_file=DEFAULT_SCHEME_FILE,
                  spams=DEFAULT_SPAMS, walltime=DEFAULT_WALLTIME,
                  mem_mb=DEFAULT_MEM,  suffix_proc=''):
         """Entry point for Processor_Verdict Class."""
@@ -83,9 +83,9 @@ class Processor_Verdict(SessionProcessor):
                                                    DEFAULT_VERDICT_MODALITIES)
         self.proctype = proctype
         self.mc = matlab_code
-        self.amico = amico
         self.camino = camino
         self.spams = spams
+        self.scheme_file = scheme_file
 
     def has_inputs(self, csess):
         """Method overridden from base class.
@@ -118,11 +118,11 @@ class Processor_Verdict(SessionProcessor):
             return 0, 'Registration missing'
 
         cassr = verdict_cassrs[0]
-        LOGGER.debug('Processor_Registration_Verdict: \
+        LOGGER.debug('Processor_Verdict: \
 good registration assessor found: %s', cassr.info()['label'])
 
         if not XnatUtils.has_resource(cassr, 'ACQ1'):
-            LOGGER.debug('Processor_Registration_Verdict: \
+            LOGGER.debug('Processor_Verdict: \
 cannot run, no ACQ resource found for %s assessor',
                          cassr.info()['label'])
             return 0, "Missing ACQ#"
@@ -151,11 +151,6 @@ cannot run, no ACQ resource found for %s assessor',
         if XnatUtils.has_resource(reg_verdict, 'ACQ2'):
             nb_acq = 2
 
-        if subj_label.startswith('VERDICT-'):
-            scheme_file = VERDICT_SUBJ_SCHEME_FILE
-        else:
-            scheme_file = DEFAULT_SCHEME_FILE
-
         cmd = SPIDER_FORMAT.format(spider=self.spider_path,
                                    proj=proj_label,
                                    subj=subj_label,
@@ -167,7 +162,7 @@ cannot run, no ACQ resource found for %s assessor',
                                    amico=self.amico,
                                    camino=self.camino,
                                    spams=self.spams,
-                                   scheme=scheme_file,
+                                   scheme=self.scheme_file,
                                    suffix_proc=self.suffix_proc)
 
         return [cmd]

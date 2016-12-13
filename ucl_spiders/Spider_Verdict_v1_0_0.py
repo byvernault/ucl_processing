@@ -27,9 +27,12 @@ __purpose__ = "Generate Verdict Map from all Verdict scans registered together \
 and merge as one nifti"
 __spider_name__ = "Verdict"
 __version__ = "1.0.0"
-__modifications__ = """2016-08-10 17:48:51.701453 - Original write"""
+__modifications__ = """2016-08-10 17:48:51.701453 - Original write
+2016-12-13 11:21:30 - Re-organisation of the matlab folder. Removing amico \
+options."""
 
 
+DEFAULT_MODEL = "VerdictProstate_Rmaps"
 DEFAULT_SCHEME_FILE = "NOptimisedV_IN.scheme"
 DEFAULT_VERDICT_TEMPLATE = """
 addpath(genpath('{matlab_code}'));
@@ -38,10 +41,11 @@ launch_AMICO_for_INNOVATE('{input_path}',\
 '{filename}',\
 '{output}',\
 '{project}',\
-'{amico}',\
+'{matlab_code}/AMICO/matlab/',\
 '{camino}',\
 '{spams}',\
-'{scheme_filename}');
+'{scheme_filename}',\
+'{model}');
 """
 DEFAULT_PDF_MAKER = """
 % Code to generate PDF for VERDICT MAP
@@ -75,35 +79,35 @@ ORDER_MAPS = ['FIT_fIC', 'FIT_cellularity',
               'FIT_cell_9-12u', 'FIT_cell_12-15u']
 C_RANGE = {'FIT_fIC': {'min': 0, 'max': 1, 'index': 1},
            'FIT_cellularity': {'min': 2*10**11, 'max': 1.5*10**14,
-                               'index': 2},
-           'FIT_fEES': {'min': 0, 'max': 1, 'index': 3},
-           'FIT_fVASC': {'min': 0, 'max': 1, 'index': 4},
-           'FIT_R': {'min': 0, 'max': 15.10*10**-6, 'index': 5},
-           'FIT_FobjCamino': {'min': 0, 'max': 50, 'index': 10},
-           'FIT_Fobj': {'min': 0, 'max': 1, 'index': 11},
-           'FIT_dir': {'min': 1*10**-10, 'max': 2.9*10**-9, 'index': 12},
-           'FIT_R_0-3u': {'min': 0, 'max': 2.67*10**-6, 'index': 13},
+                               'index': 3},
+           'FIT_fEES': {'min': 0, 'max': 1, 'index': 5},
+           'FIT_fVASC': {'min': 0, 'max': 1, 'index': 7},
+           'FIT_R': {'min': 0, 'max': 15.10*10**-6, 'index': 9},
+           'FIT_FobjCamino': {'min': 0, 'max': 50, 'index': 11},
+           'FIT_Fobj': {'min': 0, 'max': 1, 'index': 13},
+           'FIT_dir': {'min': 1*10**-10, 'max': 2.9*10**-9, 'index': 15},
+           'FIT_R_0-3u': {'min': 0, 'max': 2.67*10**-6, 'index': 17},
            'FIT_R_3-6u': {'min': 3.56*10**-6, 'max': 5.34*10**-6,
-                          'index': 14},
+                          'index': 19},
            'FIT_R_6-9u': {'min': 6.22*10**-6, 'max': 8.89*10**-6,
-                          'index': 15},
+                          'index': 21},
            'FIT_R_9-12u': {'min': 9.77*10**-6, 'max': 11.55*10**-6,
-                           'index': 16},
+                           'index': 23},
            'FIT_R_12-15u': {'min': 12.44*10**-6, 'max': 15.10*10**-6,
-                            'index': 17},
-           'FIT_fIC_0-3u': {'min': 0, 'max': 1, 'index': 18},
-           'FIT_fIC_3-6u': {'min': 0, 'max': 1, 'index': 19},
-           'FIT_fIC_6-9u': {'min': 0, 'max': 1, 'index': 20},
-           'FIT_fIC_9-12u': {'min': 0, 'max': 1, 'index': 21},
-           'FIT_fIC_12-15u': {'min': 0, 'max': 1, 'index': 22},
-           'FIT_cell_0-3u': {'min': 3*10**12, 'max': 5*10**16, 'index': 23},
-           'FIT_cell_3-6u': {'min': 2*10**12, 'max': 3*10**14, 'index': 24},
+                            'index': 25},
+           'FIT_fIC_0-3u': {'min': 0, 'max': 1, 'index': 27},
+           'FIT_fIC_3-6u': {'min': 0, 'max': 1, 'index': 29},
+           'FIT_fIC_6-9u': {'min': 0, 'max': 1, 'index': 31},
+           'FIT_fIC_9-12u': {'min': 0, 'max': 1, 'index': 33},
+           'FIT_fIC_12-15u': {'min': 0, 'max': 1, 'index': 35},
+           'FIT_cell_0-3u': {'min': 3*10**12, 'max': 5*10**16, 'index': 37},
+           'FIT_cell_3-6u': {'min': 2*10**12, 'max': 3*10**14, 'index': 39},
            'FIT_cell_6-9u': {'min': 1*10**12, 'max': 2.5*10**14,
-                             'index': 25},
+                             'index': 41},
            'FIT_cell_9-12u': {'min': 1*10**12, 'max': 5*10**13,
-                              'index': 26},
+                              'index': 43},
            'FIT_cell_12-15u': {'min': 2*10**11, 'max': 5.5*10**13,
-                               'index': 27}
+                               'index': 45}
            }
 
 
@@ -121,7 +125,6 @@ def parse_args():
     your arguments:
         --proctype: proctype where inputs are
         --mc: matlab code to launch verdict map
-        --amico : path to AMICO folder
         --camino : path to Camino
         --spams : path to spams-matlab
 
@@ -135,9 +138,7 @@ def parse_args():
                     help="Number of Acquisition of VERDICT scans (1 or 2).")
     ap.add_argument("--mc", dest="matlab_code", default=None, required=True,
                     help="Matlab code folder where is \
-launch_AMICO_for_INNOVATE.")
-    ap.add_argument("--amico", dest="amico", default=None, required=True,
-                    help="Path to AMICO folder.")
+launch_AMICO_for_INNOVATE and AMICO code in a folder AMICO/matlab.")
     ap.add_argument("--camino", dest="camino", default=None, required=True,
                     help="Path to Camino folder.")
     ap.add_argument("--spams", dest="spams", default=None, required=True,
@@ -145,6 +146,8 @@ launch_AMICO_for_INNOVATE.")
     ap.add_argument("--scheme", dest="scheme_filename", default=None,
                     help="Path to schemeFilename \
 (NOptimisedV_IN.scheme).")
+    ap.add_argument("--model", dest="model", default=DEFAULT_MODEL,
+                    help="Model type for AMICO: VerdictProstate_Rmaps.")
     return ap.parse_args()
 
 
@@ -164,10 +167,9 @@ class Spider_Verdict(SessionSpider):
     """
 
     def __init__(self, spider_path, jobdir, xnat_project, xnat_subject,
-                 xnat_session, proctype, nb_acquisition,
-                 matlab_code, amico, camino, spams, scheme_filename=None,
-                 xnat_host=None, xnat_user=None, xnat_pass=None,
-                 suffix=""):
+                 xnat_session, proctype, nb_acquisition, matlab_code, camino,
+                 spams, scheme_filename=None, model=DEFAULT_MODEL,
+                 xnat_host=None, xnat_user=None, xnat_pass=None, suffix=""):
         """Entry point for Spider_Verdict Class."""
         super(Spider_Verdict,
               self).__init__(spider_path, jobdir,
@@ -182,7 +184,6 @@ class Spider_Verdict(SessionSpider):
                                       '%s_VERDICT_report.pdf' % xnat_session)
 
         self.matlab_code = matlab_code
-        self.amico = amico
         self.spams = spams
         self.camino = camino
         if not scheme_filename:
@@ -190,6 +191,7 @@ class Spider_Verdict(SessionSpider):
                                                 DEFAULT_SCHEME_FILE)
         else:
             self.scheme_filename = scheme_filename
+        self.model = model
 
     def pre_run(self):
         """Method to download data from XNAT.
@@ -239,18 +241,19 @@ class Spider_Verdict(SessionSpider):
                     filename=os.path.basename(self.inputs[nb_acq]),
                     output=folder,
                     project=self.xnat_project,
-                    amico=self.amico,
                     camino=self.camino,
                     spams=self.spams,
-                    scheme_filename=self.scheme_filename)
-            matlab_script = os.path.join(output_folder, 'run_verdict.m')
+                    scheme_filename=self.scheme_filename,
+                    model=self.model)
+            matlab_script = os.path.join(output_folder,
+                                         'run_verdict_map%d.m' % nb_acq)
             with open(matlab_script, "w") as f:
                 f.writelines(mat_lines)
             self.run_matlab(matlab_script, verbose=True)
 
             # Generate Dicom for OsiriX
             outdir = os.path.join(output_folder, str(nb_acq), 'AMICO',
-                                  'VerdictProstate_Rmaps')
+                                  self.model)
             # Load dicom headers
             if not os.path.isfile(self.inputs['dcm']):
                 err = "DICOM File %s not found."
@@ -297,8 +300,7 @@ class Spider_Verdict(SessionSpider):
             mat_lines = DEFAULT_PDF_MAKER.format(
                     matlab_code=self.matlab_code,
                     maps_folder=os.path.join(output_folder, str(nb_acq),
-                                             'AMICO',
-                                             'VerdictProstate_Rmaps'),
+                                             'AMICO', self.model),
                     subject=self.xnat_subject,
                     output_folder=pdfs_dir)
             matlab_script = os.path.join(output_folder,
@@ -325,8 +327,7 @@ class Spider_Verdict(SessionSpider):
         for nb_acq in range(1, self.nb_acquisition+1):
             res = 'RMAPS%d' % nb_acq
             results_dict[res] = os.path.join(self.jobdir, 'outputs',
-                                             str(nb_acq), 'AMICO',
-                                             'VerdictProstate_Rmaps')
+                                             str(nb_acq), 'AMICO', self.model)
         self.upload_dict(results_dict)
         self.end()
 
@@ -469,7 +470,7 @@ def convert_niftis_2_dicoms(nifti_folder, sour_obj, output_folder, nbacq):
             os.makedirs(output_folder)
 
         # Series Number and SOP UID
-        series_number = 87000 + C_RANGE[label]['index']
+        series_number = 87000 + C_RANGE[label]['index'] + int(nbacq) - 1
         sop_id = sour_obj.SOPInstanceUID.split('.')
         sop_id = '.'.join(sop_id[:-1])+'.'
 
@@ -549,10 +550,10 @@ if __name__ == '__main__':
                                 proctype=args.proctype,
                                 nb_acquisition=args.nb_acquisition,
                                 matlab_code=args.matlab_code,
-                                amico=args.amico,
                                 camino=args.camino,
                                 spams=args.spams,
                                 scheme_filename=args.scheme_filename,
+                                model=args.model,
                                 xnat_host=args.host,
                                 xnat_user=args.user,
                                 xnat_pass=None,
