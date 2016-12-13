@@ -31,7 +31,7 @@ DEFAULT_MEM = 8048
 
 DEFAULT_SCAN_TYPES = []  # ADD SCAN TYPES
 DEFAULT_SPM12 = os.path.join(HOME, 'Code', 'spm12')
-DEFAULT_MATLAB_CODE = os.path.join(HOME, 'Code', 'matlab')
+DEFAULT_MATLAB_CODE = os.path.join(HOME, 'Code', 'matlab', 'Sample_GM', 'v1')
 
 # Format for the spider command line
 SPIDER_FORMAT = """python {spider} \
