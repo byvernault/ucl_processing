@@ -248,10 +248,6 @@ class Spider_Comput_ADC_Verdict(SessionSpider):
             results_dict[res] = os.path.join(
                     acq_folder, '%s_FIT_ADC_%d.nii.gz' % (self.xnat_session,
                                                           nb_acq))
-            files = [os.path.join(acq_folder, 'prepareADC.Bfloat'),
-                     os.path.join(acq_folder, 'temporalADC.Bfloat'),
-                     os.path.join(acq_folder, 'run_matlab_verdict.m')]
-            results_dict['tmp_%d' % nb_acq] = files
 
         self.upload_dict(results_dict)
         self.end()
