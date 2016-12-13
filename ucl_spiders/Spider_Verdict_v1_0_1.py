@@ -56,10 +56,17 @@ out_dcm = '{out_dcm}';
 
 display('Converting NIFTI to DICOM in color.');
 nii2dicomRGB(nii_folder, dicom_file, out_dcm, matlab_nii_code, nb_acq)
-
+"""
+PDF_TEMPLATE = """
+%% Add path from matlab folder:
+addpath(genpath('{matlab_code}'));
 %% Generate PDF for VERDICT MAP
 % Maps Name:
+model = '{model}';
+nii_folder = ['{output}' '/AMICO/' model];
+subject = '{subject}';
 output_pdf = '{out_pdf}';
+nb_acq = {acq};
 maps_name = {{'fIC','R','cellularity','fEES','fVASC','FobjCamino'}};
 
 % Open an image to see the number of slices
@@ -221,7 +228,6 @@ class Spider_Verdict(SessionSpider):
                     model=self.model,
                     dicom_file=self.inputs['dcm'],
                     out_dcm=dcm_folder,
-                    out_pdf=pdfs_dir,
                     acq=str(nb_acq),
                     )
             matlab_script = os.path.join(output_folder,
@@ -229,6 +235,20 @@ class Spider_Verdict(SessionSpider):
             with open(matlab_script, "w") as f:
                 f.writelines(mat_lines)
             self.run_matlab(matlab_script, verbose=True)
+
+            mat_lines = PDF_TEMPLATE.format(
+                    matlab_code=self.matlab_code,
+                    subject=self.xnat_subject,
+                    output=folder,
+                    model=self.model,
+                    out_pdf=pdfs_dir,
+                    acq=str(nb_acq),
+                    )
+            matlab_script = os.path.join(output_folder,
+                                         'run_pdf_%d.m' % nb_acq)
+            with open(matlab_script, "w") as f:
+                f.writelines(mat_lines)
+            XnatUtils.run_matlab(matlab_script, verbose=True)
 
             pdf_pages = XnatUtils.find_files(pdfs_dir, '.pdf')
             # Merge all pdfs into one:
