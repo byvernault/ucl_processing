@@ -167,7 +167,8 @@ class Spider_Comput_ADC_Verdict(SessionSpider):
                     output=folder,
                     scheme_filename=self.scheme_filename,
                     camino=self.camino)
-            matlab_script = os.path.join(folder, 'run_matlab_verdict.m')
+            matlab_script = os.path.join(output_folder,
+                                         'run_matlab_adc_%d.m' % nb_acq)
             with open(matlab_script, "w") as f:
                 f.writelines(mat_lines)
             self.run_matlab(matlab_script, verbose=True)

@@ -29,13 +29,14 @@ ucl_spiders/', 'Spider_Compute_ADC_Verdict_v1_0_0.py')
 DEFAULT_WALLTIME = '00:30:00'
 DEFAULT_MEM = 6048
 DEFAULT_PROCTYPE = 'Registration_Verdict_v1'
-DEFAULT_MATLAB_CODE = os.path.join(HOME, 'Code', 'matlab')
+DEFAULT_MATLAB_CODE = os.path.join(HOME, 'Code', 'matlab', 'VERDICT',
+                                   'ADC_MAP')
 DEFAULT_CAMINO = os.path.join(HOME, 'Code', 'caminoLaura')
 DEFAULT_VERDICT_MODALITIES = [
     'WIP b3000_90 SENSE', 'SWITCH DB TO YES b3000_80', 'b3000_80',
     'b2000_vx1.3', 'b1500_vx1.3', 'b500_vx1.3', 'b90_vx1.3']
-DEFAULT_SCHEME_FILE = os.path.join(DEFAULT_MATLAB_CODE,
-                                   'NOptimisedADC_IN.scheme')
+DEFAULT_SCHEME_FILE = os.path.join(HOME, 'Code', 'matlab', 'VERDICT',
+                                   'Noptimised', 'NOptimisedADC_IN.scheme')
 
 # Format for the spider command line
 SPIDER_FORMAT = """python {spider} \
@@ -66,7 +67,8 @@ class Processor_Compute_ADC_Verdict(SessionProcessor):
     def __init__(self, spider_path=DEFAULT_SPIDER_PATH, version=None,
                  scan_modalities=DEFAULT_VERDICT_MODALITIES,
                  proctype=DEFAULT_PROCTYPE, matlab_code=DEFAULT_MATLAB_CODE,
-                 camino=DEFAULT_CAMINO, walltime=DEFAULT_WALLTIME,
+                 camino=DEFAULT_CAMINO, scheme_file=DEFAULT_SCHEME_FILE,
+                 walltime=DEFAULT_WALLTIME,
                  mem_mb=DEFAULT_MEM,  suffix_proc=''):
         """Entry point for Processor_Verdict Class."""
         super(Processor_Compute_ADC_Verdict,
@@ -77,6 +79,7 @@ class Processor_Compute_ADC_Verdict(SessionProcessor):
         self.proctype = proctype
         self.mc = matlab_code
         self.camino = camino
+        self.scheme_file = scheme_file
 
     def has_inputs(self, csess):
         """Method overridden from base class.
@@ -104,16 +107,16 @@ class Processor_Compute_ADC_Verdict(SessionProcessor):
             if XnatUtils.is_cassessor_good_type(cassr, [self.proctype]):
                 verdict_cassrs.append(cassr)
         if not verdict_cassrs:
-            LOGGER.debug('Processor_Verdict: \
+            LOGGER.debug('Processor_Compute_ADC_Verdict: \
         cannot run, no good QA Registration VERDICT found')
             return 0, 'Registration missing'
 
         cassr = verdict_cassrs[0]
-        LOGGER.debug('Processor_Registration_Verdict: \
+        LOGGER.debug('Processor_Compute_ADC_Verdict: \
 good registration assessor found: %s', cassr.info()['label'])
 
         if not XnatUtils.has_resource(cassr, 'ACQ1'):
-            LOGGER.debug('Processor_Registration_Verdict: \
+            LOGGER.debug('Processor_Compute_ADC_Verdict: \
 cannot run, no ACQ resource found for %s assessor',
                          cassr.info()['label'])
             return 0, "Missing ACQ#"
@@ -142,8 +145,6 @@ cannot run, no ACQ resource found for %s assessor',
         if XnatUtils.has_resource(reg_verdict, 'ACQ2'):
             nb_acq = 2
 
-        scheme_file = DEFAULT_SCHEME_FILE
-
         cmd = SPIDER_FORMAT.format(spider=self.spider_path,
                                    proj=proj_label,
                                    subj=subj_label,
@@ -153,7 +154,7 @@ cannot run, no ACQ resource found for %s assessor',
                                    proctype=self.proctype,
                                    mc=self.mc,
                                    camino=self.camino,
-                                   scheme=scheme_file,
+                                   scheme=self.scheme_file,
                                    suffix_proc=self.suffix_proc)
 
         return [cmd]
