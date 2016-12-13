@@ -51,7 +51,6 @@ SPIDER_FORMAT = """python {spider} \
 --proctype {proctype} \
 --nbAcq {nb_acq} \
 --mc {mc} \
---amico {amico} \
 --camino {camino} \
 --spams {spams} \
 --scheme {scheme} \
@@ -159,7 +158,6 @@ cannot run, no ACQ resource found for %s assessor',
                                    nb_acq=nb_acq,
                                    proctype=self.proctype,
                                    mc=self.mc,
-                                   amico=self.amico,
                                    camino=self.camino,
                                    spams=self.spams,
                                    scheme=self.scheme_file,
