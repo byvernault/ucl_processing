@@ -123,7 +123,6 @@ class Spider_ADC_MAP(ScanSpider):
         # Zip outputs:
         # dcm_files = glob.glob(os.path.join(output_dir, '*', '*.dcm'))
         dcm_files = get_dicom_list(output_dir)
-        print dcm_files
         for dicom in dcm_files:
             shutil.copy(dicom, osirix_dir)
 
