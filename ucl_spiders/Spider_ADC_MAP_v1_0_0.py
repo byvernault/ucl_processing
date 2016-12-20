@@ -11,7 +11,7 @@ Purpose:        Compute ADC Maps for HandN project
 # Python packages import
 import os
 import sys
-import glob
+import shutil
 import subprocess as sb
 from dax import XnatUtils, spiders, ScanSpider
 
@@ -101,45 +101,47 @@ class Spider_ADC_MAP(ScanSpider):
         if len(self.inputs) == 1 and self.inputs[0].endswith('.zip'):
             self.time_writer('Unzipping the dicoms...')
             os.system('unzip -d %s -j %s > /dev/null'
-                      % (input_dir, self.inputs[0]))
+                      % (os.path.join(input_dir, resource), self.inputs[0]))
             os.remove(self.inputs[0])
         self.inputs = get_dicom_list(input_dir)
 
     def run(self):
         """Method running the process for the spider on the inputs data."""
-        output_folder = XnatUtils.makedir(os.path.join(self.jobdir, 'outputs'))
+        output_dir = XnatUtils.makedir(os.path.join(self.jobdir, 'outputs'))
+        osirix_dir = XnatUtils.makedir(os.path.join(self.jobdir, 'OsiriX'))
         self.time_writer('Dicom folder: %s' % os.path.dirname(self.inputs[0]))
         mat_lines = DEFAULT_ADC_TEMPLATE.format(
                 matlab_code=self.matlab_code,
                 input_path=os.path.dirname(self.inputs[0]),
-                output=output_folder,
+                output=output_dir,
                 pdf_name=self.pdf_final)
-        matlab_script = os.path.join(output_folder, 'run_matlab_verdict.m')
+        matlab_script = os.path.join(output_dir, 'run_matlab_verdict.m')
         with open(matlab_script, "w") as f:
             f.writelines(mat_lines)
         self.run_matlab(matlab_script, verbose=True)
 
         # Zip outputs:
-        for folder in os.listdir(output_folder):
-            fpath = os.path.join(output_folder, folder)
-            if os.path.isdir(fpath):
-                self.time_writer('Zipping output resource %s ...' % folder)
-                # Zip the DICOMs output:
-                initdir = os.getcwd()
-                # Zip all the files in the directory
-                zip_name = os.path.join(fpath, '%s.zip' % folder)
-                os.chdir(fpath)
-                os.system('zip -r %s * > /dev/null' % zip_name)
-                # return to the initial directory:
-                os.chdir(initdir)
+        # dcm_files = glob.glob(os.path.join(output_dir, '*', '*.dcm'))
+        dcm_files = get_dicom_list(output_dir)
+        print dcm_files
+        for dicom in dcm_files:
+            shutil.copy(dicom, osirix_dir)
+
+        self.time_writer('Zipping OsiriX resource ...')
+        # Zip the DICOMs output:
+        initdir = os.getcwd()
+        # Zip all the files in the directory
+        zip_name = os.path.join(osirix_dir, 'osirix.zip')
+        os.chdir(osirix_dir)
+        os.system('zip -r %s * > /dev/null' % zip_name)
+        # return to the initial directory:
+        os.chdir(initdir)
 
     def finish(self):
         """Method to copy the results in dax.RESULTS_DIR."""
-        output_folder = os.path.join(self.jobdir, 'outputs')
-        results_dict = {'PDF': self.pdf_final}
-        for folder in os.listdir(output_folder):
-            fpath = glob.glob(os.path.join(output_folder, folder, '*.zip'))
-            results_dict[folder] = fpath
+        osirix_dir = os.path.join(self.jobdir, 'OsiriX')
+        results_dict = {'PDF': self.pdf_final,
+                        'OsiriX': osirix_dir}
 
         self.upload_dict(results_dict)
         self.end()
@@ -178,7 +180,7 @@ def is_dicom(fpath):
 
 
 def get_dicom_list(directory):
-    """get the list of DICOMs file from the directory.
+    """get the list of DICOMs file from the directory and subdir.
 
     :param directory: directory containing the DICOM files.
     :return list(): list of filepaths that are dicoms in directory
@@ -187,8 +189,12 @@ def get_dicom_list(directory):
     dicom_paths = list()
     for fname in fnames:
         fpath = os.path.join(directory, fname)
-        if is_dicom(fpath):
+        if os.path.isfile(fpath) and is_dicom(fpath):
+            print 'dicom found: %s' % fpath
             dicom_paths.append(fpath)
+        elif os.path.isdir(fpath):
+            print 'dir: %s - searching...' % fpath
+            dicom_paths.extend(get_dicom_list(fpath))
 
     return dicom_paths
 
@@ -218,4 +224,5 @@ if __name__ == '__main__':
     spider_obj.run()
 
     # Finish method to copy results
-    spider_obj.finish()
+    if not args.skip_finish:
+        spider_obj.finish()

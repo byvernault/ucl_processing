@@ -611,4 +611,5 @@ if __name__ == '__main__':
     spider_obj.run()
 
     # Finish method to copy results
-    spider_obj.finish()
+    if not ARGS.skip_finish:
+        spider_obj.finish()

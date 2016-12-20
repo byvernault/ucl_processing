@@ -11,7 +11,6 @@ Purpose:        Perform Diffusion Model Fitting with pre-processing steps.
 # Python packages import
 import os
 import sys
-import subprocess as sb
 from dax import spiders, SessionSpider
 
 __author__ = "Benjamin Yvernault"
@@ -241,4 +240,5 @@ if __name__ == '__main__':
     spider_obj.run(args.exe_path, args.working_dir)
 
     # Finish method to copy results
-    spider_obj.finish()
+    if not args.skip_finish:
+        spider_obj.finish()
