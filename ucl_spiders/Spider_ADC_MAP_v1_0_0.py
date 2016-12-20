@@ -139,9 +139,9 @@ class Spider_ADC_MAP(ScanSpider):
 
     def finish(self):
         """Method to copy the results in dax.RESULTS_DIR."""
-        osirix_dir = os.path.join(self.jobdir, 'OsiriX')
+        osirix_zip = os.path.join(self.jobdir, 'OsiriX', 'osirix.zip')
         results_dict = {'PDF': self.pdf_final,
-                        'OsiriX': osirix_dir}
+                        'OsiriX': osirix_zip}
 
         self.upload_dict(results_dict)
         self.end()
@@ -190,10 +190,8 @@ def get_dicom_list(directory):
     for fname in fnames:
         fpath = os.path.join(directory, fname)
         if os.path.isfile(fpath) and is_dicom(fpath):
-            print 'dicom found: %s' % fpath
             dicom_paths.append(fpath)
         elif os.path.isdir(fpath):
-            print 'dir: %s - searching...' % fpath
             dicom_paths.extend(get_dicom_list(fpath))
 
     return dicom_paths
