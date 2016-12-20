@@ -348,5 +348,5 @@ if __name__ == '__main__':
     spider_obj.run(ARGS.reg_aladin_exe)
 
     # Finish method to copy results
-    if not ARGS.skip_finish:
+    if not ARGS.skipfinish:
         spider_obj.finish()

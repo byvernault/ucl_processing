@@ -269,5 +269,5 @@ if __name__ == '__main__':
     spider_obj.run(args.gif_script, args.dbtemplate, args.working_dir)
 
     # Finish method to copy results
-    if not args.skip_finish:
+    if not args.skipfinish:
         spider_obj.finish()
