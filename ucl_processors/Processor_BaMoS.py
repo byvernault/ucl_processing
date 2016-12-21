@@ -151,10 +151,6 @@ class Processor_BaMoS(SessionProcessor):
         csess = XnatUtils.CachedImageSession(assessor._intf, proj_label,
                                              subj_label, sess_label)
 
-        gif_label = ''
-        for cassr in csess.assessors():
-            if XnatUtils.is_cassessor_good_type(cassr, [self.gif]):
-                gif_label = cassr
         t1_scans = XnatUtils.get_good_cscans(csess, self.t1)
         flair_scans = XnatUtils.get_good_cscans(csess, self.flair)
         t2_scans = XnatUtils.get_good_cscans(csess, self.t2)
@@ -164,9 +160,9 @@ class Processor_BaMoS(SessionProcessor):
                                    subj=subj_label,
                                    sess=sess_label,
                                    dir=jobdir,
-                                   t1=t1_scans[0],
-                                   flair=flair_scans[0],
-                                   gif=gif_label,
+                                   t1=t1_scans[0].info()['ID'],
+                                   flair=flair_scans[0].info()['ID'],
+                                   gif=self.gif,
                                    bamos=self.bamos,
                                    reg=self.regfolder,
                                    seg=self.segfolder,
@@ -178,6 +174,6 @@ class Processor_BaMoS(SessionProcessor):
 
         # Add the T2 if found
         if t2_scans:
-            cmd = '%s --t2 %s' % t2_scans[0]
+            cmd = '%s --t2 %s' % t2_scans[0].info()['ID']
 
         return [cmd]
