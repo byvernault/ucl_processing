@@ -11,6 +11,7 @@ Purpose:        Spider to run BaMoS, Carole script
 # Python packages import
 import os
 import sys
+import glob
 import shutil
 from dax import spiders, SessionSpider
 
@@ -247,12 +248,58 @@ class Spider_BaMoS(SessionSpider):
         cmd = "%s %s sh" % (self.bamos, args_file)
         os.system(cmd)
 
+        self.make_pdf()
+
+    def make_pdf(self):
+        """Generate report for BAMOS."""
+        result_dir = os.path.join(self.jobdir, self.xnat_session, 'Results')
+        datacorr = glob.glob(os.path.join(result_dir, 'DataCorrected*'))
+        lesion = glob.glob(os.path.join(result_dir, 'LesionCorrected*JC1AC1*'))
+        t1flair = glob.glob(os.path.join(result_dir, 'T1FLAIR*'))
+        images = [
+            datacorr[0],
+            lesion[0],
+            t1flair[0],
+        ]
+
+        labels = {
+            '0': 'Data Corrected',
+            '1': 'Lesion',
+            '2': 'T1FLAIR'
+        }
+        cmap = {
+            '0': 'gray',
+            '1': 'gray',
+            '2': 'gray',
+        }
+        self.plot_images_page(self.pdf_final, 1, images,
+                              'BaMoS %s Results' % self.xnat_session,
+                              image_labels=labels, cmap=cmap)
+
     def finish(self):
         """Method to copy the results in dax.RESULTS_DIR."""
+        result_dir = os.path.join(self.jobdir, self.xnat_session, 'Results')
+        # Search for each outputs:
+        connect = glob.glob(os.path.join(result_dir, 'ConnectO*JC1AC1*'))
+        datacorr = glob.glob(os.path.join(result_dir, 'DataCorrected*'))
+        lesion = glob.glob(os.path.join(result_dir, 'LesionCorrected*JC1AC1*'))
+        outlier = glob.glob(os.path.join(result_dir, 'Outlier*JC1AC1*'))
+        summarise = glob.glob(os.path.join(result_dir, 'Summarise*JC1AC1*'))
+        t1flair = glob.glob(os.path.join(result_dir, 'T1FLAIR*'))
+        distance = glob.glob(os.path.join(result_dir, 'DistanceChoice*'))
+        reg = [os.path.join(self.jobdir, self.xnat_session,
+                            'FLAIR_%s.nii.gz')]
+        if self.t2:
+            reg.append(os.path.join(self.jobdir, self.xnat_session,
+                                    'T2_%s.nii.gz'))
         results_dict = {'PDF': self.pdf_final,
-                        #
-                        # ADD OTHER RESULTS YOU WANT TO SAVE
-                        #
+                        'LOBES': distance,
+                        'DATA': datacorr,
+                        'LESION': lesion,
+                        'COMPONENT': outlier + connect,
+                        'SUMCOR': summarise,
+                        'T1FLAIR': t1flair,
+                        'INIT': reg,
                         }
         self.upload_dict(results_dict)
         self.end()
