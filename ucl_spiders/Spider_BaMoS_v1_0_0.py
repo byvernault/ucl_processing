@@ -204,10 +204,18 @@ class Spider_BaMoS(SessionSpider):
         os.makedirs(flair_folder)
         self.inputs['flair'] = self.download(self.flair, 'NIFTI', flair_folder)
         # Move inputs:
-        shutil.move(self.inputs['t1'][0], os.path.join(
-                        bamos_dir, 'T1_%s.nii.gz' % self.xnat_session))
-        shutil.move(self.inputs['flair'][0], os.path.join(
-                        bamos_dir, 'FLAIR_%s_init.nii.gz' % self.xnat_session))
+        # Change to float:
+        t1 = os.path.join(bamos_dir, 'T1_%s.nii.gz' % self.xnat_session)
+        cmd = 'seg_maths %s -odt float %s' % (self.inputs['t1'][0], t1)
+        os.system(cmd)
+        # shutil.move(self.inputs['t1'][0], os.path.join(
+        #                 bamos_dir, 'T1_%s.nii.gz' % self.xnat_session))
+        # shutil.move(self.inputs['flair'][0], os.path.join(
+        #                 bamos_dir, 'FLAIR_%s_init.nii.gz' % self.xnat_session))
+        flair = os.path.join(bamos_dir,
+                             'FLAIR_%s_init.nii.gz' % self.xnat_session)
+        cmd = 'seg_maths %s -odt float %s' % (self.inputs['flair'][0], flair)
+        os.system(cmd)
         filelist = self.inputs['gif']['prior'] + \
             self.inputs['gif']['label'] + \
             self.inputs['gif']['tiv']
@@ -218,8 +226,12 @@ class Spider_BaMoS(SessionSpider):
             t2_folder = os.path.join(folder, 't2')
             os.makedirs(t2_folder)
             self.inputs['t2'] = self.download(self.t2, 'NIFTI', t2_folder)
-            shutil.move(self.inputs['t2'][0], os.path.join(
-                    bamos_dir, 'T2_%s_init.nii.gz' % self.xnat_session))
+            # shutil.move(self.inputs['t2'][0], os.path.join(
+            #         bamos_dir, 'T2_%s_init.nii.gz' % self.xnat_session))
+            t2 = os.path.join(bamos_dir,
+                              'T2_%s_init.nii.gz' % self.xnat_session)
+            cmd = 'seg_maths %s -odt float %s' % (self.inputs['t2'][0], t2)
+            os.system(cmd)
 
     def run(self):
         """Method running the process for the spider on the inputs data."""
