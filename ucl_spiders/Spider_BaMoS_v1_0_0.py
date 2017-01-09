@@ -300,10 +300,10 @@ class Spider_BaMoS(SessionSpider):
         t1flair = glob.glob(os.path.join(result_dir, 'T1FLAIR*'))
         distance = glob.glob(os.path.join(result_dir, 'DistanceChoice*'))
         reg = [os.path.join(self.jobdir, self.xnat_session,
-                            'FLAIR_%s.nii.gz')]
+                            'FLAIR_%s.nii.gz' % self.xnat_session)]
         if self.t2:
             reg.append(os.path.join(self.jobdir, self.xnat_session,
-                                    'T2_%s.nii.gz'))
+                                    'T2_%s.nii.gz' % self.xnat_session))
         results_dict = {'PDF': self.pdf_final,
                         'LOBES': distance,
                         'DATA': datacorr,
