@@ -128,7 +128,8 @@ class Processor_BaMoS(SessionProcessor):
 
         gif_proctype = list()
         for cassr in csess.assessors():
-            if XnatUtils.is_cassessor_good_type(cassr, [self.gif]):
+            if XnatUtils.is_cassessor_good_type(cassr, [self.gif]) and \
+               XnatUtils.is_cassessor_usable(cassr):
                 gif_proctype.append(cassr)
         if not gif_proctype:
             LOGGER.debug('Processor_BaMoS: \
