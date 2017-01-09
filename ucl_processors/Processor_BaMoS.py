@@ -25,7 +25,7 @@ LOGGER = logging.getLogger('dax')
 # EDIT PARAMETERS FOR YOUR SPIDER CASE (SPIDER_PATH, WALLTIME, etc...)
 HOME = os.path.expanduser("~")
 DEFAULT_SPIDER_PATH = os.path.join(HOME, 'Xnat-management', 'ucl_processing',
-                                   'ucl_spiders', 'Spider_BaMoS_v1_0_1.py')
+                                   'ucl_spiders', 'Spider_BaMoS_v1_0_0.py')
 DEFAULT_WALLTIME = '10:00:00'
 DEFAULT_MEM = 8048
 DEFAULT_BAMOS_SCRIPT = os.path.join(HOME, 'Code', 'scripts', 'bash',
