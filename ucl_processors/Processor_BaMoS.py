@@ -131,22 +131,34 @@ class Processor_BaMoS(SessionProcessor):
             LOGGER.debug('Processor_BaMoS: \
         cannot run at all, no T1 image found')
             return -1, 'T1 not found'
+        elif len(t1_cscans) > 1:
+            LOGGER.debug('Processor_BaMoS: too many t1 found')
+            return 0, 'too many good T1'
 
         flair_cscans = get_usable_cscans(csess, self.flair)
         if not flair_cscans:
             LOGGER.debug('Processor_BaMoS: \
         cannot run at all, no FLAIR image found')
             return -1, 'FLAIR not found'
+        elif len(flair_cscans) > 1:
+            LOGGER.debug('Processor_BaMoS: too many flair found')
+            return 0, 'too many good FLAIR'
 
-        gif_proctype = list()
+        sess_info = csess.info()
+        good_gif = False
+        gif_label = '-x-'.join([sess_info['project'],
+                                sess_info['subject_label'],
+                                sess_info['label'],
+                                t1_cscans[0].info()['ID'],
+                                self.gif])
         for cassr in csess.assessors():
-            if XnatUtils.is_cassessor_good_type(cassr, [self.gif]) and \
+            if cassr.info()['label'] == gif_label and \
                cassr.info()['procstatus'] == task.COMPLETE:
-                gif_proctype.append(cassr)
-        if not gif_proctype:
+                good_gif = True
+        if not good_gif:
             LOGGER.debug('Processor_BaMoS: \
-        cannot run, no good QA %s found' % self.gif)
-            return 0, '%s missing' % self.gif
+        cannot run, %s procstatus not COMPLETE.' % self.gif)
+            return 0, '%s not COMPLETE' % self.gif
 
         return 1, None
 
