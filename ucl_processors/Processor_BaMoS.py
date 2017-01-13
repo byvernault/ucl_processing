@@ -63,6 +63,18 @@ SPIDER_FORMAT = """python {spider} \
 """
 
 
+def get_usable_cscans(csess, stype):
+    """
+    Get only the usable cscans for a csess.
+    """
+    usable_cscans = list()
+    cscans = XnatUtils.get_good_cscans(csess, stype)
+    for cscan in cscans:
+        if cscan.info()['quality'] == 'usable':
+            usable_cscans.append(cscan)
+    return usable_cscans
+
+
 class Processor_BaMoS(SessionProcessor):
     """Processor class for Verdict that runs on a session.
 
@@ -114,14 +126,14 @@ class Processor_BaMoS(SessionProcessor):
                       (see XnatUtils in dax for information)
         :return: status, qcstatus
         """
-        t1_scans = XnatUtils.get_good_cscans(csess, self.t1)
-        if not t1_scans:
+        t1_cscans = get_usable_cscans(csess, self.t1)
+        if not t1_cscans:
             LOGGER.debug('Processor_BaMoS: \
         cannot run at all, no T1 image found')
             return -1, 'T1 not found'
 
-        flair_scans = XnatUtils.get_good_cscans(csess, self.flair)
-        if not flair_scans:
+        flair_cscans = get_usable_cscans(csess, self.flair)
+        if not flair_cscans:
             LOGGER.debug('Processor_BaMoS: \
         cannot run at all, no FLAIR image found')
             return -1, 'FLAIR not found'
@@ -152,30 +164,17 @@ class Processor_BaMoS(SessionProcessor):
         csess = XnatUtils.CachedImageSession(assessor._intf, proj_label,
                                              subj_label, sess_label)
 
-        good_t1 = ''
-        good_flair = ''
-        good_t2 = ''
-
-        t1_scans = XnatUtils.get_good_cscans(csess, self.t1)
-        for t1_scan in t1_scans:
-            if t1_scan.info()['quality'] == 'usable':
-                good_t1 = t1_scan.info()['ID']
-        flair_scans = XnatUtils.get_good_cscans(csess, self.flair)
-        for flair_scan in flair_scans:
-            if flair_scan.info()['quality'] == 'usable':
-                good_flair = flair_scan.info()['ID']
-        t2_scans = XnatUtils.get_good_cscans(csess, self.t2)
-        for t2_scan in t2_scans:
-            if t2_scan.info()['quality'] == 'usable':
-                good_t2 = t2_scan.info()['ID']
+        t1_cscans = get_usable_cscans(csess, self.t1)
+        flair_cscans = get_usable_cscans(csess, self.flair)
+        t2_cscans = get_usable_cscans(csess, self.t2)
 
         cmd = SPIDER_FORMAT.format(spider=self.spider_path,
                                    proj=proj_label,
                                    subj=subj_label,
                                    sess=sess_label,
                                    dir=jobdir,
-                                   t1=good_t1,
-                                   flair=good_flair,
+                                   t1=t1_cscans[0].info()['ID'],
+                                   flair=flair_cscans[0].info()['ID'],
                                    gif=self.gif,
                                    bamos=self.bamos,
                                    reg=self.regfolder,
@@ -187,7 +186,7 @@ class Processor_BaMoS(SessionProcessor):
                                    suffix_proc=self.suffix_proc)
 
         # Add the T2 if found
-        if t2_scans:
-            cmd = '%s --t2 %s' % good_t2
+        if t2_cscans:
+            cmd = '%s --t2 %s' % t2_cscans[0].info()['ID']
 
         return [cmd]
