@@ -341,7 +341,7 @@ if __name__ == '__main__':
 
     # Check the value:
     spider_obj.time_writer("NIFTK_DRC_ANALYZE set to %s"
-                           % os.environ["NIFTK_DRC_ANALYZE"])
+                           % os.environ.get("NIFTK_DRC_ANALYZE", 'OFF'))
 
     # Run method
     spider_obj.run()
