@@ -390,7 +390,7 @@ def convert_nifti_2_dicoms(nifti_file, sour_obj, output_folder, nbacq,
         os.makedirs(output_folder)
 
     # Series Number and SOP UID
-    series_number = 88000 + nbacq
+    series_number = 870011 + 11 * (nbacq - 1)
     sop_id = sour_obj.SOPInstanceUID.split('.')
     sop_id = '.'.join(sop_id[:-1])+'.'
 
