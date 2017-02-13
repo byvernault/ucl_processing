@@ -24,6 +24,7 @@ __version__ = "2.0.0"
 __modifications__ = """2016-12-12 12:03 - Original write"""
 
 
+PSUFFIX = 'version 2'
 DEFAULT_MODEL = "VERDICTPROSTATEuDIFF1"
 DEFAULT_SCHEME_FILE = "NOptimisedV_IN_v2.scheme"
 DEFAULT_VERDICT_TEMPLATE = """
@@ -51,9 +52,10 @@ nii_folder = [output '/AMICO/' model];
 dicom_file = '{dicom_file}';
 matlab_nii_code = '{matlab_code}/ext';
 out_dcm = '{out_dcm}';
+suffix = '{suffix}';
 
 display('Converting NIFTI to DICOM in color.');
-nii2dicomRGB(nii_folder, dicom_file, out_dcm, matlab_nii_code, nb_acq)
+nii2dicomRGB(nii_folder, dicom_file, out_dcm, matlab_nii_code, nb_acq, suffix)
 """
 PDF_TEMPLATE = """
 %% Add path from matlab folder:
@@ -228,6 +230,7 @@ class Spider_Verdict(SessionSpider):
                     dicom_file=self.inputs['dcm'],
                     out_dcm=dcm_folder,
                     acq=str(nb_acq),
+                    suffix=PSUFFIX,
                     )
             matlab_script = os.path.join(output_folder,
                                          'run_verdict_map%d.m' % nb_acq)
