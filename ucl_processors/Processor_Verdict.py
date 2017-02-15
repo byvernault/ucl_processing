@@ -29,7 +29,7 @@ HOME = os.path.expanduser("~")
 DEFAULT_SPIDER_PATH = os.path.join(HOME, 'Xnat-management/ucl_processing/\
 ucl_spiders/', 'Spider_Verdict_v1_0_1.py')
 DEFAULT_WALLTIME = '08:00:00'
-DEFAULT_MEM = 8048
+DEFAULT_MEM = 10048
 DEFAULT_PROCTYPE = 'Registration_Verdict_v1'
 DEFAULT_MATLAB_CODE = os.path.join(HOME, 'Code', 'matlab', 'VERDICT', 'MAPS',
                                    'v1')
