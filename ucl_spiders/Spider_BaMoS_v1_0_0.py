@@ -195,10 +195,20 @@ class Spider_BaMoS(SessionSpider):
         self.inputs['gif'] = {}
         self.inputs['gif']['label'] = self.download(gif_label, 'LABELS',
                                                     gif_folder)
+        cmd = 'fslreorient2std %s %s' % (self.inputs['gif']['label'],
+                                         self.inputs['gif']['label'])
+        os.system(cmd)
         self.inputs['gif']['tiv'] = self.download(gif_label, 'TIV',
                                                   gif_folder)
+        cmd = 'fslreorient2std %s %s' % (self.inputs['gif']['tiv'],
+                                         self.inputs['gif']['tiv'])
+        os.system(cmd)
         self.inputs['gif']['prior'] = self.download(gif_label, 'PRIOR',
                                                     gif_folder)
+        cmd = 'fslreorient2std %s %s' % (self.inputs['gif']['prior'],
+                                         self.inputs['gif']['prior'])
+        os.system(cmd)
+
         # Flair:
         flair_folder = os.path.join(folder, 'flair')
         os.makedirs(flair_folder)
@@ -207,6 +217,8 @@ class Spider_BaMoS(SessionSpider):
         # Change to float:
         t1 = os.path.join(bamos_dir, 'T1_%s.nii.gz' % self.xnat_session)
         cmd = 'seg_maths %s -odt float %s' % (self.inputs['t1'][0], t1)
+        os.system(cmd)
+        cmd = 'fslreorient2std %s %s' % (t1, t1)
         os.system(cmd)
         flair = os.path.join(bamos_dir,
                              'FLAIR_%s_init.nii.gz' % self.xnat_session)
