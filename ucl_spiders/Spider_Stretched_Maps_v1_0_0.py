@@ -9,7 +9,6 @@ Purpose:        Calculate DDC maps and a maps using the DW Head and Neck data
 """
 
 # Python packages import
-import glob
 import os
 import sys
 
@@ -103,7 +102,7 @@ class Spider_Stretched_Maps(ScanSpider):
         """Method running the process for the spider on the inputs data."""
         # Run command define by self.cmd_args
         matlab_template = """addpath('$mpath');
-XNAT_StretchedMaps_final('$dcm_folder', '$ddc_maps', '$adc_maps');"""
+XNAT_StretchedMaps_final('$dcm_folder', '$ddc_maps', '$adc_maps', '$pdf');"""
         folder = os.path.dirname(self.data[self.xnat_scan]['DICOM'][0])
         dccdir = os.path.join(self.jobdir, 'dcc_maps')
         os.makedirs(dccdir)
@@ -112,20 +111,22 @@ XNAT_StretchedMaps_final('$dcm_folder', '$ddc_maps', '$adc_maps');"""
         self.cmd_args = {
             'exe': 'matlab',
             'template': matlab_template,
-            'args': {'dcm_folder': folder,
-                     'ddc_maps': dccdir,
-                     'adc_maps': adcdir,
-                     'mpath': self.matlab_code,
-                     }
+            'args': {
+                'dcm_folder': folder,
+                'ddc_maps': dccdir,
+                'adc_maps': adcdir,
+                'mpath': self.matlab_code,
+                'pdf': self.pdf_final,
+            }
         }
         self.run_cmd_args()
 
     def finish(self):
         """Method to copy the results in dax.RESULTS_DIR."""
+        dccdir = os.path.join(self.jobdir, 'dcc_maps')
+        adcdir = os.path.join(self.jobdir, 'adc_maps')
         results_dict = {'PDF': self.pdf_final,
-                        #
-                        # ADD OTHER RESULTS YOU WANT TO SAVE
-                        #
+                        'OsiriX': [adcdir, dccdir],
                         }
         self.upload_dict(results_dict)
         self.end()

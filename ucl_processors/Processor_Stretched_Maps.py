@@ -26,7 +26,7 @@ LOGGER = logging.getLogger('dax')
 HOME = os.path.expanduser("~")
 DEFAULT_SPIDER_PATH = os.path.join(HOME, 'Xnat-management/ucl_processing/\
 ucl_spiders/', 'Spider_Stretched_Maps_v1_0_0.py')
-DEFAULT_WALLTIME = '10:00:00'
+DEFAULT_WALLTIME = '14:00:00'
 DEFAULT_MEM = 8048
 DEFAULT_MATLAB_CODE = os.path.join(HOME, 'Code', 'matlab', 'Stretched_Maps',
                                    'v1')
