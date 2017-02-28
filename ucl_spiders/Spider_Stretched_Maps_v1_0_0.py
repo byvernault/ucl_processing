@@ -104,17 +104,15 @@ class Spider_Stretched_Maps(ScanSpider):
         matlab_template = """addpath('$mpath');
 XNAT_StretchedMaps_final('$dcm_folder', '$ddc_maps', '$adc_maps', '$pdf');"""
         folder = os.path.dirname(self.data[self.xnat_scan]['DICOM'][0])
-        dccdir = os.path.join(self.jobdir, 'dcc_maps')
-        os.makedirs(dccdir)
-        adcdir = os.path.join(self.jobdir, 'adc_maps')
-        os.makedirs(adcdir)
+        maps_dir = os.path.join(self.jobdir, 'maps')
+        os.makedirs(maps_dir)
         self.cmd_args = {
             'exe': 'matlab',
             'template': matlab_template,
             'args': {
                 'dcm_folder': folder,
-                'ddc_maps': dccdir,
-                'adc_maps': adcdir,
+                'ddc_maps': maps_dir,
+                'adc_maps': maps_dir,
                 'mpath': self.matlab_code,
                 'pdf': self.pdf_final,
             }
@@ -123,11 +121,11 @@ XNAT_StretchedMaps_final('$dcm_folder', '$ddc_maps', '$adc_maps', '$pdf');"""
 
     def finish(self):
         """Method to copy the results in dax.RESULTS_DIR."""
-        dccdir = os.path.join(self.jobdir, 'dcc_maps')
-        adcdir = os.path.join(self.jobdir, 'adc_maps')
-        results_dict = {'PDF': self.pdf_final,
-                        'OsiriX': [adcdir, dccdir],
-                        }
+        maps_dir = os.path.join(self.jobdir, 'maps')
+        results_dict = {
+            'PDF': self.pdf_final,
+            'OsiriX': maps_dir,
+        }
         self.upload_dict(results_dict)
         self.end()
 
