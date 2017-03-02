@@ -30,7 +30,7 @@ DEFAULT_WALLTIME = '20:00:00'
 DEFAULT_MEM = 8048
 DEFAULT_MATLAB_CODE = os.path.join(HOME, 'Code', 'matlab', 'Stretched_Maps',
                                    'v1')
-DEFAULT_SCAN_TYPES = ['ep2d_DWI_ax_high_res$']
+DEFAULT_SCAN_TYPES = ['ep2d_DWI_ax_high_res']
 
 # Format for the spider command line
 SPIDER_FORMAT = """python {spider} \
