@@ -54,6 +54,7 @@ DEFAULT_PDF_MAKER = """
 addpath(genpath('{matlab_code}'));
 
 % Maps Name:
+nb_acq = {acq};
 maps_name = {{'fIC','R','cellularity','fEES','fVASC','FobjCamino'}};
 
 % Open an image to see the number of slices
@@ -63,7 +64,7 @@ nb_slices = aux.hdr.dime.dim(4);
 for i=1:nb_slices
     filename = ['DisplayMapsVerdictSlice' num2str(i, '%02d');];
     jpg_path = fullfile('{output_folder}', [filename '.pdf']);
-    plot_oneslice_selectedmaps('{maps_folder}','{subject}',i,maps_name,1,1,1,jpg_path);
+    plot_oneslice_selectedmaps('{maps_folder}','{subject}',i,maps_name,1,1,1,jpg_path,nb_acq);
 end
 """
 DICOM_SCAN_TYPE = ['WIP b3000_90 SENSE', 'SWITCH DB TO YES b3000_80',
