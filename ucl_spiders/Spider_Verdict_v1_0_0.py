@@ -295,15 +295,16 @@ class Spider_Verdict(SessionSpider):
         pdfs_dir = XnatUtils.makedir(os.path.join(output_folder, 'pdfs'))
         fpages = list()
         # Run matlab function
-        for nb_acq in range(1, self.nb_acquisition+1):
+        for nb_acq in range(1, self.nb_acquisition + 1):
             pdf_page = os.path.join(output_folder, str(nb_acq),
                                     'VerdictMapAcq%d.pdf' % nb_acq)
             mat_lines = DEFAULT_PDF_MAKER.format(
-                    matlab_code=self.matlab_code,
-                    maps_folder=os.path.join(output_folder, str(nb_acq),
-                                             'AMICO', self.model),
-                    subject=self.xnat_subject,
-                    output_folder=pdfs_dir)
+                matlab_code=self.matlab_code,
+                maps_folder=os.path.join(output_folder, str(nb_acq),
+                                         'AMICO', self.model),
+                subject=self.xnat_subject,
+                output_folder=pdfs_dir,
+                acq=nb_acq)
             matlab_script = os.path.join(output_folder,
                                          'run_pdf_page_%d.m' % nb_acq)
             with open(matlab_script, "w") as f:
@@ -325,7 +326,7 @@ class Spider_Verdict(SessionSpider):
         results_dict = {'PDF': self.pdf_final,
                         'OsiriX': os.path.join(self.jobdir, 'outputs',
                                                'OsiriX', 'osirix.zip')}
-        for nb_acq in range(1, self.nb_acquisition+1):
+        for nb_acq in range(1, self.nb_acquisition + 1):
             res = 'RMAPS%d' % nb_acq
             results_dict[res] = os.path.join(self.jobdir, 'outputs',
                                              str(nb_acq), 'AMICO', self.model)
@@ -346,7 +347,7 @@ class Spider_Verdict(SessionSpider):
         if not verbose:
             matlabdir = os.path.dirname(matlab_script)
             prefix = os.path.basename(matlab_script).split('.')[0]
-            cmd = cmd+' > '+os.path.join(matlabdir, prefix+'_outlog.log')
+            cmd = '%s > %s' % (cmd, os.path.join(matlabdir, '%s_outlog.log' % prefix))
         os.system(cmd)
         self.time_writer("Matlab script: %s done" % matlab_script)
 
