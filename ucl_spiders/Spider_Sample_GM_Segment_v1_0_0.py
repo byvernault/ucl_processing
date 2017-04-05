@@ -44,12 +44,13 @@ def parse_args():
 
     :return: argument parser object created by parse_args()
     """
-    ap = spiders.get_scan_argparser("Sample_GM_Segment", __purpose__)
-    ap.add_argument("--mc", dest="matlab_code", default=None, required=True,
-                    help="Matlab code path to run sample GM segment.")
-    ap.add_argument("--spm12", dest="spm12", default=None, required=True,
-                    help="SPM 12 path.")
-    return ap.parse_args()
+    parser = spiders.get_scan_argparser("Sample_GM_Segment", __purpose__)
+    parser.add_argument("--mc", dest="matlab_code", default=None,
+                        required=True,
+                        help="Matlab code path to run sample GM segment.")
+    parser.add_argument("--spm12", dest="spm12", default=None, required=True,
+                        help="SPM 12 path.")
+    return parser.parse_args()
 
 
 class Spider_Sample_GM_Segment(ScanSpider):
@@ -91,11 +92,20 @@ class Spider_Sample_GM_Segment(ScanSpider):
 
         :param argument_parse: argument parser object return by parse_args()
         """
-        resource = 'NIFTI'  # resource to download from the scan on XNAT
         folder = os.path.join(self.jobdir, 'Sample_GM_Segment')
         if not os.path.exists(os.path.join(self.jobdir, 'inputs')):
             os.makedirs(folder)
-        self.inputs.extend(self.download(self.xnat_scan, resource, folder))
+        # Check first that there isn't a resource on the assessor EDITED
+        # EDITS_RESOURCE
+        resource = 'EDITS_RESOURCE'
+        _proctype = '{0}_v{1}'.format(__spider_name__,
+                                      __version__.split('.')[0])
+        _alabel = self.get_assessor_label(_proctype, self.xnat_scan)
+        self.inputs.extend(self.download(_alabel, resource, folder))
+        if not self.inputs:
+            # Download nifti if no files
+            resource = 'NIFTI'  # resource to download from the scan on XNAT
+            self.inputs.extend(self.download(self.xnat_scan, resource, folder))
 
     def run(self):
         """Method running the process for the spider on the inputs data."""
@@ -108,12 +118,14 @@ class Spider_Sample_GM_Segment(ScanSpider):
         self.input_file = input_file
         folder = os.path.join(self.jobdir, 'Sample_GM_Segment')
         mat_lines = MAT_TEMPLATE.format(
-                        matlab_code=self.matlab_code,
-                        input_file=input_file,
-                        spm12=self.spm12)
+            matlab_code=self.matlab_code,
+            input_file=input_file,
+            spm12=self.spm12
+        )
+
         matlab_script = os.path.join(folder, 'run_sample_GM.m')
-        with open(matlab_script, "w") as f:
-            f.writelines(mat_lines)
+        with open(matlab_script, "w") as _fobj:
+            _fobj.writelines(mat_lines)
         XnatUtils.run_matlab(matlab_script, verbose=True)
 
         # Make report:
@@ -172,12 +184,13 @@ class Spider_Sample_GM_Segment(ScanSpider):
                 rc_res.append(os.path.join(folder, filename))
         mat_res.append(os.path.join(self.jobdir, 'Sample_GM_Segment',
                                     'run_sample_GM.m'))
-        results_dict = {'PDF': self.pdf_final,
-                        'RC': rc_res,
-                        'BIAS': bias_res,
-                        'C': c_res,
-                        'MAT': mat_res
-                        }
+        results_dict = {
+            'PDF': self.pdf_final,
+            'RC': rc_res,
+            'BIAS': bias_res,
+            'C': c_res,
+            'MAT': mat_res
+        }
         self.upload_dict(results_dict)
         self.end()
 
@@ -186,18 +199,19 @@ if __name__ == '__main__':
     args = parse_args()
     # generate spider object:
     spider_obj = Spider_Sample_GM_Segment(
-                               spider_path=sys.argv[0],
-                               jobdir=args.temp_dir,
-                               xnat_project=args.proj_label,
-                               xnat_subject=args.subj_label,
-                               xnat_session=args.sess_label,
-                               xnat_scan=args.scan_label,
-                               matlab_code=args.matlab_code,
-                               spm12=args.spm12,
-                               xnat_host=args.host,
-                               xnat_user=args.user,
-                               xnat_pass=None,
-                               suffix=args.suffix)
+       spider_path=sys.argv[0],
+       jobdir=args.temp_dir,
+       xnat_project=args.proj_label,
+       xnat_subject=args.subj_label,
+       xnat_session=args.sess_label,
+       xnat_scan=args.scan_label,
+       matlab_code=args.matlab_code,
+       spm12=args.spm12,
+       xnat_host=args.host,
+       xnat_user=args.user,
+       xnat_pass=None,
+       suffix=args.suffix
+    )
     # print some information before starting
     spider_obj.print_init(args, "Benjamin Yvernault & Dave Cash",
                           "b.yvernault@ucl.ac.uk")
