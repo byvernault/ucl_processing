@@ -26,11 +26,11 @@ LOGGER = logging.getLogger('dax')
 HOME = os.path.expanduser("~")
 DEFAULT_SPIDER_PATH = os.path.join(HOME, 'Xnat-management/ucl_processing/\
 ucl_spiders/Spider_Vessel_Extraction_v1_0_0.py')
-DEFAULT_WALLTIME = '01:00:00'
-DEFAULT_MEM = 8048
+DEFAULT_WALLTIME = '02:00:00'
+DEFAULT_MEM = 16000
 DEFAULT_PIXEL_SIZE = '0.775438'
 DEFAULT_SCAN_TYPES = ['Ax Inhance 3D MRV', 'Ax Inhance 3D MRA']
-DEFAULT_VESSEL_PATH = '/share/apps/cmic/niftk/niftk-16.4.1/\
+DEFAULT_VESSEL_PATH = '/share/apps/cmic/niftk/niftk-17.3.0/\
 bin/niftkVesselExtractor'
 
 # Format for the spider command line
