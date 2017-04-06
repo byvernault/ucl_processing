@@ -97,7 +97,7 @@ class Spider_Sample_GM_Segment(ScanSpider):
             os.makedirs(folder)
         # Check first that there isn't a resource on the assessor EDITED
         # EDITS_RESOURCE
-        resource = 'EDITS_RESOURCE'
+        resource = 'EDITS'
         _proctype = '{0}_v{1}'.format(__spider_name__,
                                       __version__.split('.')[0])
         _alabel = self.get_assessor_label(_proctype, self.xnat_scan)
