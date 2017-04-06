@@ -115,8 +115,10 @@ class Spider_Sample_GM_Segment(ScanSpider):
             if filepath.endswith('.nii.gz'):
                 os.system("gzip -f -d %s" % (filepath))
                 input_file = filepath[:-3]
+
         self.input_file = input_file
         folder = os.path.join(self.jobdir, 'Sample_GM_Segment')
+        print('Input File: {0}'.format(self.input_file))
         mat_lines = MAT_TEMPLATE.format(
             matlab_code=self.matlab_code,
             input_file=input_file,
