@@ -15,6 +15,7 @@ DEFAULT_TEXT_REPORT = 'ERROR/WARNING for dcm2nii :\n'
 DCM2NII_CMD = '''{dcm2nii} -a n -e n -d n -g y -f n -n y -p n \
 -v y -x n -r n {dicom}'''
 DCMDJPEG_TEMPLATE = """{dcmdjpeg} {original_dcm} {new_dcm} > /dev/null"""
+DO_NOT_CONVERT_SCANS = ['PhoenixZIPReport']
 
 
 class Module_dcm2nii(ScanModule):
@@ -58,10 +59,14 @@ delete it.' % self.directory)
         cscan = CacheScan object from XnatUtils
         return True or False
         """
+        if cscan.info()['type'] in DO_NOT_CONVERT_SCANS:
+            return False
+
         # Check output
         if XnatUtils.has_resource(cscan, 'NIFTI'):
             LOGGER.debug('Has NIFTI')
             return False
+
         # Check input
         if not XnatUtils.has_resource(cscan, 'DICOM'):
             LOGGER.debug('no DICOM resource')
@@ -76,8 +81,7 @@ delete it.' % self.directory)
         else:
             LOGGER.debug('downloading all DICOMs...')
             self.dicom_paths = XnatUtils.download_files_from_obj(
-                                    self.directory,
-                                    scan_obj.resource('DICOM'))
+                self.directory, scan_obj.resource('DICOM'))
             if not self.dicom_paths:
                 msg = """dcm2nii -- %s -- No proper DICOM found in \
     resource DICOM on XNAT"""
@@ -205,9 +209,9 @@ dicom files, zipping dicoms.')
             dcm_p = os.path.join(dcm_dir, os.path.basename(root))
             new_dicom = "%s_dcmdjpeged.%s" % (dcm_p, ext)
             dcmdjpeg_cmd = DCMDJPEG_TEMPLATE.format(
-                                dcmdjpeg=self.dcmdjpeg_exe,
-                                original_dcm=dicom,
-                                new_dcm=new_dicom)
+                dcmdjpeg=self.dcmdjpeg_exe,
+                original_dcm=dicom,
+                new_dcm=new_dicom)
             os.system(dcmdjpeg_cmd)
             dicom_paths.append(new_dicom)
         return dicom_paths
@@ -229,8 +233,8 @@ dicom files, zipping dicoms.')
                 if fpath.lower().endswith('.nii.gz'):
                     nifti_list.append(fpath)
                 if fpath.lower().endswith('.nii'):
-                    os.system('gzip '+fpath)
-                    nifti_list.append(fpath+'.gz')
+                    os.system('gzip ' + fpath)
+                    nifti_list.append(fpath + '.gz')
 
         # Check NIFTI:
         good_to_upload = self.check_outputs(scan_info, nifti_list,
