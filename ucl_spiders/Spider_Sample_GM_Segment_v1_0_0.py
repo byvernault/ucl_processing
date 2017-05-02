@@ -97,15 +97,17 @@ class Spider_Sample_GM_Segment(ScanSpider):
             os.makedirs(folder)
         # Check first that there isn't a resource on the assessor EDITED
         # EDITS_RESOURCE
-        resource = 'EDITS'
         _proctype = '{0}_v{1}'.format(__spider_name__,
                                       __version__.split('.')[0])
         _alabel = self.get_assessor_label(_proctype, self.xnat_scan)
-        self.inputs.extend(self.download(_alabel, resource, folder))
-        if not self.inputs:
-            # Download nifti if no files
-            resource = 'NIFTI'  # resource to download from the scan on XNAT
-            self.inputs.extend(self.download(self.xnat_scan, resource, folder))
+        try:
+            self.inputs.extend(self.download(_alabel, 'EDITS', folder))
+        except ValueError:
+            print('No EDITS resource found, using scan NIFTI.')
+            if not self.inputs:
+                # Download nifti if no files
+                self.inputs.extend(self.download(self.xnat_scan, 'NIFTI',
+                                                 folder))
 
     def run(self):
         """Method running the process for the spider on the inputs data."""
@@ -118,7 +120,7 @@ class Spider_Sample_GM_Segment(ScanSpider):
 
         self.input_file = input_file
         folder = os.path.join(self.jobdir, 'Sample_GM_Segment')
-        print('Input File: {0}'.format(self.input_file))
+
         mat_lines = MAT_TEMPLATE.format(
             matlab_code=self.matlab_code,
             input_file=input_file,
