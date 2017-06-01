@@ -1,0 +1,8 @@
+dcm_file,FILE,Dicom File for one of VERDICT scan to generate dicoms.
+acquisition1,FILE,Acquisition 1 NIFTI file with registered Verdict Scans as one volume
+acquisition2,FILE,Acquisition 2 NIFTI file with registered Verdict Scans as one volume,F
+matlab_src,PATH,Matlab folder containing the AMICO code
+camino,PATH,Path to camino folder
+spams,PATH,Path to spams-matlab folder
+scheme_filename,FILE,Path to scheme file: NOptimisedV_IN.scheme
+model,STRING,Model type for AMICO: VerdictProstate_Rmaps,F

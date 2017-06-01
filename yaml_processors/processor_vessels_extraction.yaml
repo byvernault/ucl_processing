@@ -1,0 +1,38 @@
+---
+inputs:
+  default:
+    spider_path: /Users/byvernault/home-local/code/git/ucl_processing/pipelines/Vessels_Extraction/v1.0.0/Spider_Vessels_Extraction_v1_0_0.py
+    working_dir: /scratch0/dax/
+    nipype_exe: perform_vessels_extraction.py
+    omp: 4
+    ct: False
+    min: 1.00
+    max:
+  xnat:
+    scans:
+      - scan1:
+        types: Ax Inhance 3D MR*
+        resources:
+          - resource: NIFTI
+            varname: vessel
+        vars:
+          # id: vesselsids
+          # any scan attrs: the variable name
+    #assessors:
+    #  - assessor1:
+    #    proctypes: Gif_Parcellation_v1
+    #    needqc: False
+    #    resources:
+    #      - resource1: SEG
+    #        name: parcellation
+    #    vars:
+    #      procversion: gifversion
+command: python {spider_path} --exe {nipype_exe} --vessels {vessel}
+attrs:
+  # suffix:
+  xsitype: proc:genProcData
+  walltime: 02:00:00
+  memory: 6048
+  ppn: 4
+  type: scan # session
+  scan_nb: scan1  # not used if session

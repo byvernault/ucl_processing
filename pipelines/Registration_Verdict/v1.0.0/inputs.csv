@@ -1,0 +1,3 @@
+in_files,FILE,Images to register
+omp,STRING,number of core use by reg_aladin,F
+env_source,PATH,File to set environment variable

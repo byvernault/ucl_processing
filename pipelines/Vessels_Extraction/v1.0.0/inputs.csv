@@ -1,0 +1,7 @@
+vessels,FILE,Vessels image file path.
+min,STRING,Minumun vessel size detected.,f
+max,STRING,Maximum vessel size detected.,f
+ct,INT,1 if the inputs are CT scans.,f
+exe,PATH,Path to Niftypipe python script perform_...
+omp,STRING,number of core use in niftypipe,f
+working_dir,PATH,working directory for temp files,f

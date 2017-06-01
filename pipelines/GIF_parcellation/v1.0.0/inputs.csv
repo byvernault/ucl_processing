@@ -1,0 +1,5 @@
+t1_file,FILE,MPRAGE/T1 File to process with GIF
+dbt,PATH,gif-based database xml file
+gif,PATH,Path to Gif python script perform_gif_propagation.py
+openmp_core,STRING,number of core use by reg_aladin,F
+working_dir,PATH,working directory for temp files,F

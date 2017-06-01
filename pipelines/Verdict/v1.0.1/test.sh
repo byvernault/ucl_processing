@@ -1,0 +1,12 @@
+python Spider_Verdict_v1_0_1.py \
+-a INNOVATE-x-INN-047-FCO-x-INN-047-FCO_WALK__20160630-x-Verdict_v1 \
+-d /Users/byvernault/data/jobsdir/test_verdict \
+--dcm_file xnat:/project/INNOVATE/subject/INN-047-FCO/experiment/INN-047-FCO_WALK__20160630/scan/801/resource/DICOM \
+--acquisition1 xnat:/project/INNOVATE/subject/INN-047-FCO/experiment/INN-047-FCO_WALK__20160630/assessor/INNOVATE-x-INN-047-FCO-x-INN-047-FCO_WALK__20160630-x-Registration_Verdict_v1/out/resource/ACQ1 \
+--acquisition2 xnat:/project/INNOVATE/subject/INN-047-FCO/experiment/INN-047-FCO_WALK__20160630/assessor/INNOVATE-x-INN-047-FCO-x-INN-047-FCO_WALK__20160630-x-Registration_Verdict_v1/out/resource/ACQ2 \
+--matlab_src /Users/byvernault/home-local/code/matlab/VERDICT/MAPS/v1 \
+--camino /Users/byvernault/home-local/softwares/caminoLaura/bin \
+--spams /Users/byvernault/home-local/softwares/spams-matlab \
+--scheme_filename /Users/byvernault/home-local/code/matlab/VERDICT/Noptimised/NOptimisedV_IN.scheme \
+--model VerdictProstate_Rmaps \
+--host https://prostate-xnat.cs.ucl.ac.uk

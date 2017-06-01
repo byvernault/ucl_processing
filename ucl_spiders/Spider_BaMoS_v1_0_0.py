@@ -301,6 +301,7 @@ class Spider_BaMoS(SessionSpider):
         connect = glob.glob(os.path.join(result_dir, 'ConnectO*JC1AC1*'))
         datacorr = glob.glob(os.path.join(result_dir, 'DataCorrected*'))
         lesion = glob.glob(os.path.join(result_dir, 'LesionCorrected*JC1AC1*'))
+        other_seg = glob.glob(os.path.join(result_dir, 'OtherSeg*'))
         outlier = glob.glob(os.path.join(result_dir, 'Outlier*JC1AC1*'))
         summarise = glob.glob(os.path.join(result_dir, 'Summarise*JC1AC1*'))
         t1flair = glob.glob(os.path.join(result_dir, 'T1FLAIR*'))
@@ -310,15 +311,16 @@ class Spider_BaMoS(SessionSpider):
         if self.t2:
             reg.append(os.path.join(self.jobdir, self.xnat_session,
                                     'T2_%s.nii.gz' % self.xnat_session))
-        results_dict = {'PDF': self.pdf_final,
-                        'LOBES': distance,
-                        'DATA': datacorr,
-                        'LESION': lesion,
-                        'COMPONENT': outlier + connect,
-                        'SUMCOR': summarise,
-                        'T1FLAIR': t1flair,
-                        'INIT': reg,
-                        }
+        results_dict = {
+            'PDF': self.pdf_final,
+            'LOBES': distance,
+            'DATA': datacorr,
+            'LESION': lesion + other_seg,
+            'COMPONENT': outlier + connect,
+            'SUMCOR': summarise,
+            'T1FLAIR': t1flair,
+            'INIT': reg,
+        }
         self.upload_dict(results_dict)
         self.end()
 
@@ -327,26 +329,26 @@ if __name__ == '__main__':
     args = parse_args()
     # generate spider object:
     spider_obj = Spider_BaMoS(
-                    spider_path=sys.argv[0],
-                    jobdir=args.temp_dir,
-                    xnat_project=args.proj_label,
-                    xnat_subject=args.subj_label,
-                    xnat_session=args.sess_label,
-                    bamos=args.bamos,
-                    t1=args.t1,
-                    gif=args.gif,
-                    t2=args.t2,
-                    flair=args.flair,
-                    gmatrix=args.gmatrix,
-                    rulefile=args.rulefile,
-                    regfolder=args.regfolder,
-                    segfolder=args.segfolder,
-                    exe_seg_biasm=args.seg_biasm,
-                    exe_seg_analysis=args.seg_analysis,
-                    xnat_host=args.host,
-                    xnat_user=args.user,
-                    xnat_pass=None,
-                    suffix=args.suffix)
+        spider_path=sys.argv[0],
+        jobdir=args.temp_dir,
+        xnat_project=args.proj_label,
+        xnat_subject=args.subj_label,
+        xnat_session=args.sess_label,
+        bamos=args.bamos,
+        t1=args.t1,
+        gif=args.gif,
+        t2=args.t2,
+        flair=args.flair,
+        gmatrix=args.gmatrix,
+        rulefile=args.rulefile,
+        regfolder=args.regfolder,
+        segfolder=args.segfolder,
+        exe_seg_biasm=args.seg_biasm,
+        exe_seg_analysis=args.seg_analysis,
+        xnat_host=args.host,
+        xnat_user=args.user,
+        xnat_pass=None,
+        suffix=args.suffix)
     # print some information before starting
     spider_obj.print_init(args, "Carole Sudre & Benjamin Yvernault",
                           "byvernault@ucl.ac.uk")

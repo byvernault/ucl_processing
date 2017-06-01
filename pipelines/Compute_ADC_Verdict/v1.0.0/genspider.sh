@@ -1,0 +1,1 @@
+GenerateAutoSpider -n Compute_ADC_Verdict -v 1.0.0 -i inputs.csv -o outputs.csv -c call.py -d .

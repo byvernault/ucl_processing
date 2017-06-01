@@ -1,0 +1,2 @@
+dicoms,FILE,Dicom Folder containing the dicoms
+matlab_code,PATH,Path containing the matlab code for ADC MAP

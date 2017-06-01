@@ -1,0 +1,5 @@
+gad,FILE,GAD scan image file
+vessel,FILE,Vessel scan image file
+exe,PATH,Path to Niftypipe python script perform_vessels2gad_registration.py
+omp,STRING,number of core use by reg_aladin,f
+working_dir,PATH,working directory for temp files,f

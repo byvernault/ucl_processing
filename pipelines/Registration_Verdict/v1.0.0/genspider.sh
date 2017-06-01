@@ -1,0 +1,1 @@
+dax_generator autospider -n Registration_Verdict -v 1.0.0 -i inputs.csv -o outputs.csv -c call.py -d .

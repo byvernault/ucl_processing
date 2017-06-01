@@ -36,6 +36,7 @@ DEFAULT_TEMPLATE = '/cluster/project0/GIF/template-database-r2.1/db.xml'
 DEFAULT_GIF_PATH = os.path.join(HOME,
                                 'anaconda/bin/perform_gif_propagation.py')
 DEFAULT_SCAN_TYPES = ['T1', 'MPRAGE']  # ADD SCAN TYPES
+DEFAULT_SOURCE = None
 
 # Format for the spider command line
 SPIDER_FORMAT = """python {spider} \
@@ -48,7 +49,8 @@ SPIDER_FORMAT = """python {spider} \
 --dbt {template} \
 --gif {gif_path} \
 --openmp_core {number_core} \
---working_dir "{working_dir}"
+--working_dir "{working_dir}" \
+{env_source}
 """
 
 
@@ -70,8 +72,9 @@ class Processor_GIF_Parcellation(ScanProcessor):
     def __init__(self, spider_path=DEFAULT_SPIDER_PATH, version=None,
                  walltime=DEFAULT_WALLTIME, mem_mb=DEFAULT_MEM,
                  ppn=DEFAULT_PPN, db_template=DEFAULT_TEMPLATE,
+                 env_source=None,
                  gif=DEFAULT_GIF_PATH, scan_types=DEFAULT_SCAN_TYPES,
-                 suffix_proc='',  working_dir=DEFAULT_WORKING_DIR):
+                 suffix_proc='', working_dir=DEFAULT_WORKING_DIR):
         """Entry point for Processor_GIF_Parcellation Class."""
         super(Processor_GIF_Parcellation,
               self).__init__(scan_types, walltime, mem_mb, spider_path,
@@ -79,6 +82,7 @@ class Processor_GIF_Parcellation(ScanProcessor):
         self.db_template = db_template
         self.gif = gif
         self.working_dir = working_dir
+        self.env_source = env_source
 
     def has_inputs(self, cscan):
         """Method overridden from base class.
@@ -120,6 +124,10 @@ class Processor_GIF_Parcellation(ScanProcessor):
 
         working_dir = os.path.join(self.working_dir, assr_label)
 
+        env_source = ''
+        if self.env_source is not None:
+            env_source = '--env_source {}'.format(self.env_source)
+
         cmd = SPIDER_FORMAT.format(spider=self.spider_path,
                                    proj=proj_label,
                                    subj=subj_label,
@@ -130,6 +138,7 @@ class Processor_GIF_Parcellation(ScanProcessor):
                                    template=self.db_template,
                                    gif_path=self.gif,
                                    number_core=self.ppn,
-                                   working_dir=working_dir)
+                                   working_dir=working_dir,
+                                   env_source=env_source)
 
         return [cmd]

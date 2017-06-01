@@ -3,7 +3,7 @@
 Author:         Benjamin Yvernault
 contact:        b.yvernault@ucl.ac.uk
 Spider name:    GIF_Parcellation
-Spider version: 1.0.0
+Spider version: 3.0.0
 Creation date:  2016-02-05 13:52:08.737570
 Purpose:        Parcellation of the brain using GIF: Geodesic Information Flow.
 """
@@ -11,8 +11,8 @@ Purpose:        Parcellation of the brain using GIF: Geodesic Information Flow.
 # Python packages import
 import os
 import sys
-import csv
 import glob
+import xml.etree.ElementTree as ET
 from collections import OrderedDict
 from dax import spiders, ScanSpider
 
@@ -20,7 +20,7 @@ __author__ = "Benjamin Yvernault"
 __email__ = "b.yvernault@ucl.ac.uk"
 __purpose__ = "Parcellation of the brain using GIF: Geodesic Information Flow."
 __spider_name__ = "GIF_Parcellation"
-__version__ = "1.0.0"
+__version__ = "3.0.0"
 __modifications__ = """2016-03-15 14:56 - Adding working_dir options
 2016-05-10 18:04:01 - Update to new format respecting pep8
 """
@@ -34,7 +34,8 @@ GIF_CMD = """{exe_path} \
 --openmp_core {number_core} \
 --n_procs 1 \
 --working_dir '{working_dir}' \
---remove_tmp"""
+--remove_tmp
+"""
 
 
 def parse_args():
@@ -117,7 +118,7 @@ class Spider_GIF_Parcellation(ScanSpider):
             os.makedirs(folder)
         self.inputs.extend(self.download(self.xnat_scan, resource, folder))
 
-    def run(self, gif_script, dbtemplate, working_dir):
+    def run(self, gif_script, dbtemplate, working_dir, env_source):
         """Method running the process for the spider on the inputs data.
 
         :param gif_script: Path to the Gif python script
@@ -161,7 +162,7 @@ class Spider_GIF_Parcellation(ScanSpider):
         seg = glob.glob(os.path.join(out_dir, '*seg.nii.gz'))
         tiv = glob.glob(os.path.join(out_dir, '*tiv.nii.gz'))
         # Volumes:
-        volumes = glob.glob(os.path.join(out_dir, '*volumes.csv'))
+        volumes = glob.glob(os.path.join(out_dir, '*volumes.xml'))
         results_dict = {'PDF': self.pdf_final,
                         'BIAS_COR': bias_corrected,
                         'BRAIN': brain,
@@ -194,8 +195,6 @@ class Spider_GIF_Parcellation(ScanSpider):
         seg = glob.glob(os.path.join(out_dir, '*seg.nii.gz'))
         tiv = glob.glob(os.path.join(out_dir, '*tiv.nii.gz'))
         list_images = [bias_corrected, brain, labels, seg, tiv, prior]
-        # Volumes:
-        volumes = glob.glob(os.path.join(out_dir, '*volumes.csv'))
 
         # Page 1:
         images = []
@@ -226,22 +225,25 @@ class Spider_GIF_Parcellation(ScanSpider):
                               image_labels=labels, cmap=cmap)
 
         # Page 2
+        # Volumes:
+        volumes = glob.glob(os.path.join(out_dir, '*volumes.xml'))
         if len(volumes) != 1:
             err = '%s output csv file with information on volumes not found \
 or more than one file found.'
             raise Exception(err % (volumes))
-        with open(volumes[0], 'rb') as csvfileread:
-            csvreader = csv.reader(csvfileread, delimiter=',')
-            li_name = csvreader.next()
-            li_volume = csvreader.next()
-
+        tree = ET.parse(volumes[0])
+        root = tree.getroot()
         di_stats = OrderedDict()
-        for index, name in enumerate(li_name):
-            di_stats[name] = li_volume[index]
+        for tissue in root.findall('tissues'):
+            for item in tissue.findall('item'):
+                di_stats[item.find('name').text] = item.find('volumeProb').text
+        for tissue in root.findall('labels'):
+            for item in tissue.findall('item'):
+                di_stats[item.find('name').text] = item.find('volumeProb').text
 
         self.plot_stats_page(pdf_pages['2'], 2, di_stats,
                              'Volumes computed by GIF_Parcellation',
-                             columns_header=['Label Name', 'Volume'])
+                             columns_header=['Label Name', 'Volume ml'])
 
         # Join the two pages for the PDF:
         self.merge_pdf_pages(pdf_pages, self.pdf_final)

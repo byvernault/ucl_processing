@@ -1,0 +1,28 @@
+---
+inputs:
+  default:
+    spider_path: /Users/byvernault/home-local/code/git/ucl_processing/pipelines/Vessels2Gad_Reg/v1.0.0/Spider_Vessels2Gad_Reg_v1_0_0.py
+    working_dir: /scratch0/dax/
+    nipype_exe: perform_vessels2gad_registration.py
+    omp: 4
+  xnat:
+    scans:
+      - scan1:
+        types: 1mm Ax FSPG + Gad
+        resources:
+          - resource: NIFTI
+            varname: gad
+      - scan2:
+        types: Ax Inhance 3D MR*
+        resources:
+          - resource: NIFTI
+            varname: vessel
+command: python {spider_path} --exe {nipype_exe} --gad {gad} --vessel {vessel}
+attrs:
+  # suffix:
+  xsitype: proc:genProcData
+  walltime: 01:00:00
+  memory: 4048
+  ppn: 4
+  type: scan
+  scan_nb: scan2

@@ -66,6 +66,8 @@ def parse_args():
                     help="Number of core used by reg_aladin.")
     ap.add_argument("--working_dir", dest="working_dir", default="",
                     help="working directory for temp files. Default: output")
+    ap.add_argument("--env_source", dest="env_source", default=None,
+                    help="Environment file to source before the process.")
     return ap.parse_args()
 
 
@@ -123,6 +125,9 @@ class Spider_GIF_Parcellation(ScanSpider):
         :param dbtemplate: gif-based database xml file describing the inputs
         :return: None
         """
+        if env_source is not None and os.path.isfile(env_source):
+            os.system('source {}'.format(env_source))
+
         if len(working_dir) > 0 and not os.path.exists(working_dir):
             os.makedirs(working_dir)
 
@@ -268,7 +273,8 @@ if __name__ == '__main__':
     spider_obj.pre_run()
 
     # Run method
-    spider_obj.run(args.gif_script, args.dbtemplate, args.working_dir)
+    spider_obj.run(args.gif_script, args.dbtemplate, args.working_dir,
+                   args.env_source)
 
     # Finish method to copy results
     if not args.skipfinish:

@@ -1,0 +1,1 @@
+GenerateAutoSpider -n ADC_MAP -v 1.0.0 -i inputs.csv -o outputs.csv -c call.m -d .

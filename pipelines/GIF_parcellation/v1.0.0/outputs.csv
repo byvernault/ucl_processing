@@ -1,0 +1,8 @@
+GIF_parcellation.pdf,FILE,PDF
+*bias_corrected.nii.gz,FILE,BIAS_COR
+*brain.nii.gz,FILE,BRAIN
+*labels.nii.gz,FILE,LABELS
+*prior.nii.gz,FILE,PRIOR
+*seg.nii.gz,FILE,SEG
+*tiv.nii.gz,FILE,TIV
+*volumes.csv,FILE,STATS

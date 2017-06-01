@@ -1,0 +1,13 @@
+bamos,PATH,BaMoS bash Script path
+t1,FILE,T1 NIFTI file
+gif,DIR,Folder containing GIF results
+flair,FILE,FLAIR NIFTI file
+t2,FILE,T2 NIFTI file if exists
+gmatrix,PATH,File defining the g-matrix
+rulefile,PATH,File defining the rules
+niftyreg,PATH,Folder containing niftyreg exe
+niftyseg,PATH,Folder containing niftyseg exe
+fsl,PATH,Folder containing fsl exe
+seg_biasm,PATH,Path to executable Seg_BiASM
+seg_analysis,PATH,Path to executable Seg_Analysis
+icbm,PATH,Path to ICBM priors

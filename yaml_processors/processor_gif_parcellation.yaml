@@ -1,0 +1,34 @@
+---
+inputs:
+  default:
+    spider_path: /Users/byvernault/home-local/code/git/ucl_processing/pipelines/Gif_Parcellation/v3.0.0/Spider_GIF_Parcellation_v3_0_0.py
+    working_dir: /scratch0/dax/
+    nipype_exe: perform_gif_propagation.py
+    db: /cluster/project0/GIF/template-database-r2.1/db.xml
+    env_source: /share/apps/cmic/NiftyPipe/v2.0/setup_v2.0.sh
+    omp: 4
+  xnat:
+    scans:
+      - scan1:
+        types: MPRAGE,T1
+        resources:
+          - resource: NIFTI
+            varname: t1
+    #assessors:
+    #  - assessor1:
+    #    proctypes: Gif_Parcellation_v1
+    #    needqc: False
+    #    resources:
+    #      - resource1: SEG
+    #        name: parcellation
+    #    vars:
+    #      procversion: gifversion
+command: python {spider_path} --env_source {env_source} --mprage {t1} --dbt {db} --gif {nipype_exe} --openmp_core {omp}
+attrs:
+  # suffix:
+  xsitype: proc:genProcData
+  walltime: 01:00:00
+  memory: 3850
+  ppn: 4
+  type: scan # session
+  scan_nb: scan1  # not used if session

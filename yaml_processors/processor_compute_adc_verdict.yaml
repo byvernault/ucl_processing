@@ -1,0 +1,32 @@
+---
+inputs:
+  default:
+    spider_path: /Users/byvernault/home-local/code/git/ucl_processing/pipelines/Compute_ADC_Verdict/v1.0.0/Spider_Compute_ADC_Verdict_v1_0_0.py
+    matlab_src: /Users/byvernault/home-local/code/matlab/VERDICT/ADC_MAP/v1
+    camino: /Users/byvernault/home-local/softwares/caminoLaura
+    scheme_filename: /Users/byvernault/home-local/code/matlab/VERDICT/Noptimised/NOptimisedADC_IN.scheme
+  xnat:
+    scans:
+      - scan1:
+        types: SWITCH DB TO YES b3000_80
+        resources:
+          - resource: DICOM
+            varname: dcm
+    assessors:
+     - assessor1:
+       proctypes: Registration_Verdict_v1
+       needs_qc: False
+       resources:
+         - resource: ACQ1
+           varname: acquisition1
+         - resource: ACQ2
+           varname: acquisition2
+           required: False
+command: python {spider_path} --dcm_file {dcm} --acquisitions {acquisition1},{acquisition2}
+attrs:
+  # suffix:
+  xsitype: proc:genProcData
+  walltime: 01:00:00
+  memory: 3850
+  ppn: 4
+  type: session
