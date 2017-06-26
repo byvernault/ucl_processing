@@ -10,7 +10,7 @@ inputs:
   xnat:
     scans:
       - scan1:
-        types: MPRAGE,T1
+        types: MPRAGE M_FFE,MPRAGE repeat M_FFE,MPRAGE SENSE2 M_FFE,MPRAGE NORM,MPRAGE GRAPPA2 NORM,MPRAGE GRAPPA2 repeat NORM,MPRAGE GRAPPA3 NORM,SAG MPRAGE_GRAPPA2 NORM,Head_Head_MPRAGE GRAPPA2 NORM,Head_MPRAGE GRAPPA2 NORM,Head_MPRAGE GRAPPA2_S14_DIS2D NORM,Head_MPRAGE GRAPPA2_S17_DIS3D NORM
         resources:
           - resource: NIFTI
             varname: t1

@@ -1,0 +1,28 @@
+---
+attrs:
+  priority_project:
+  queue_limit: 400
+  job_email: m.modat@ucl.ac.uk
+  job_email_options: a
+  xnat_host: https://epinav-xnat.cs.ucl.ac.uk
+modules:
+  - name: dcm2nii
+    filepath: /home/dax/Xnat-management/ucl_processing/ucl_modules/Module_dcm2nii.py
+    arguments:
+      directory: /cluster/project0/DAX/tmpdir/dcm2nii_epinav
+      zip_dicoms: True
+yamlprocessors:
+  - name: gif_v3
+    filepath: /home/dax/Xnat-management/ucl_processing/yaml_processors/processor_gif_parcellation.yaml
+    arguments:
+      inputs.xnat.scans.scan1.types: 1mm Cor MPRAGE
+  - name: vessel2gad
+    filepath: /home/dax/Xnat-management/ucl_processing/yaml_processors/processor_vessels2gad_reg.yaml
+  - name: vesselext
+    filepath: /home/dax/Xnat-management/ucl_processing/yaml_processors/processor_vessels_extraction.yaml
+  - name: mprage2gad
+    filepath: /home/dax/Xnat-management/ucl_processing/yaml_processors/Processor_mprage2gad_reg.yaml
+projects:
+  - project: IMPLAN
+    modules: dcm2nii
+    yamlprocessors: gif_v3,vessel2gad,vesselext,mprage2gad

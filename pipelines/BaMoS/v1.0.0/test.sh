@@ -1,1 +1,15 @@
-python Spider_BaMoS_v1_0_0.py -a 'assessor_label' -d 'tmp_dir' <args> ...
+python Spider_BaMoS_v1_0_0.py \
+-d /Users/byvernault/data/jobsdir/test_bamos/TempDir_2017_6_20/ \
+--no_subdir \
+-a prion-x-009LSF37PC-x-009LSF37PC_20100218-x-BaMoS_v1 \
+--exe perform_bamos_full.py \
+--host $DPUK \
+--t1 xnat:/project/prion/subject/009LSF37PC/experiment/009LSF37PC_20100218/scan/0002/resource/NIFTI \
+--flair xnat:/project/prion/subject/009LSF37PC/experiment/009LSF37PC_20100218/scan/0024/resource/NIFTI \
+--gif_seg xnat:/project/prion/subject/009LSF37PC/experiment/009LSF37PC_20100218/assessor/prion-x-009LSF37PC-x-009LSF37PC_20100218-x-0002-x-GIF_Parcellation_v3/resource/SEG \
+--gif_parc xnat:/project/prion/subject/009LSF37PC/experiment/009LSF37PC_20100218/assessor/prion-x-009LSF37PC-x-009LSF37PC_20100218-x-0002-x-GIF_Parcellation_v3/resource/LABELS \
+--gif_prior xnat:/project/prion/subject/009LSF37PC/experiment/016MTM30PC_20150728/assessor/prion-x-009LSF37PC-x-009LSF37PC_20100218-x-0002-x-GIF_Parcellation_v3/resource/PRIOR \
+--gif_tiv xnat:/project/prion/subject/009LSF37PC/experiment/016MTM30PC_20150728/assessor/prion-x-009LSF37PC-x-009LSF37PC_20100218-x-0002-x-GIF_Parcellation_v3/resource/TIV \
+--icbm /Users/byvernault/home-local/softwares/bamos_src/ICBM_Priors \
+--rule /Users/byvernault/home-local/softwares/bamos_src/GenericRule_CSF.txt \
+--gmatrix /Users/byvernault/home-local/softwares/bamos_src/GMatrix4_Low3.txt

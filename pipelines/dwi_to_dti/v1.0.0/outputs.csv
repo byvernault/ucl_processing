@@ -1,0 +1,17 @@
+DWI_2_DTI_report.pdf,FILE,PDF
+*.png,FILE,QC
+*qc_xfms.csv,FILE,QC
+*_tensors.nii.gz,FILE,DTI
+*_dwis.nii.gz,FILE,DWI
+*_dwis.nii.gz,FILE,DWI
+*_b0.nii.gz,FILE,DWI
+*.bval,FILE,DWI
+*.bvec,FILE,DWI
+*_mask.nii.gz,FILE,OTHERS
+*_fa*.nii.gz,FILE,OTHERS
+*_md*.nii.gz,FILE,OTHERS
+*_predicted_images.nii.gz,FILE,OTHERS
+*_rgb*.nii.gz,FILE,OTHERS
+*tensor_res*.nii.gz,FILE,OTHERS
+*_v1.nii.gz,FILE,OTHERS
+*_b0_*.nii.gz,FILE,OTHERS

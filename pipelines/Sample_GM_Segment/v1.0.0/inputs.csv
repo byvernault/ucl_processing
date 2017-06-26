@@ -1,0 +1,3 @@
+t1,FILE,T1 image file path
+matlab_code,PATH,Path containing the matlab code for Sample GM Segment.
+spm,PATH,Path to SPM

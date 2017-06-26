@@ -1,0 +1,31 @@
+---
+settings:
+  - host: https://dpuk-ucl.cs.ucl.ac.uk
+    username:
+    password:
+    projects:
+      - control_HD
+      - control_DRC
+      - control_PRION
+      - prion
+      - DIAN
+      - ADNI_N
+  - host: https://epinav-xnat.cs.ucl.ac.uk
+    username:
+    password:
+    projects:
+      - IMPLAN
+  - host: https://prostate-xnat.cs.ucl.ac.uk
+    username:
+    password:
+    projects:
+      - PICTURE
+      - INNOVATE
+      - VERDICT
+      - HandN
+  - host: http://cmic-xnat.cs.ucl.ac.uk
+    username:
+    password:
+    projects:
+      - Prisma_upgrade
+      - DIAN_SP

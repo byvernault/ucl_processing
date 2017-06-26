@@ -1,0 +1,56 @@
+---
+attrs:
+  priority_project:
+  queue_limit: 400
+  job_email: m.modat@ucl.ac.uk
+  job_email_options: a
+  xnat_host: https://dpuk-ucl.cs.ucl.ac.uk
+
+modules:
+  - name: dcm2nii
+    filepath: /home/dax/Xnat-management/ucl_processing/ucl_modules/Module_dcm2nii.py
+    arguments:
+      directory: /cluster/project0/DAX/tmpdir/dcm2nii_dpuk
+      zip_dicoms: True
+
+processors:
+  - name: spm
+    filepath: /home/dax/Xnat-management/ucl_processing/ucl_processors/Processor_Sample_GM_Segment.py
+    arguments:
+      scan_types: MPRAGE M_FFE,MPRAGE repeat M_FFE,MPRAGE SENSE2 M_FFE,MPRAGE NORM,MPRAGE GRAPPA2 NORM,MPRAGE GRAPPA2 repeat NORM,MPRAGE GRAPPA3 NORM,SAG MPRAGE_GRAPPA2 NORM,Head_Head_MPRAGE GRAPPA2 NORM,Head_MPRAGE GRAPPA2 NORM,Head_MPRAGE GRAPPA2_S14_DIS2D NORM,Head_MPRAGE GRAPPA2_S17_DIS3D NORM
+  - name: spm_ngaus2
+    filepath: /home/dax/Xnat-management/ucl_processing/ucl_processors/Processor_Sample_GM_Segment.py
+    arguments:
+      scan_types: MPRAGE M_FFE,MPRAGE repeat M_FFE,MPRAGE SENSE2 M_FFE,MPRAGE NORM,MPRAGE GRAPPA2 NORM,MPRAGE GRAPPA2 repeat NORM,MPRAGE GRAPPA3 NORM,SAG MPRAGE_GRAPPA2 NORM,Head_Head_MPRAGE GRAPPA2 NORM,Head_MPRAGE GRAPPA2 NORM,Head_MPRAGE GRAPPA2_S14_DIS2D NORM,Head_MPRAGE GRAPPA2_S17_DIS3D NORM
+      matlab_code: /home/dax/Code/matlab/Sample_GM/v1_ngaus2
+      suffix_proc: ngaus2
+  - name: bamos
+    filepath: /home/dax/Xnat-management/ucl_processing/ucl_processors/Processor_BaMoS.py
+    arguments:
+      bamos_script: /home/dax/Code/scripts/bash/BaMoSGenericDax_PRION.sh
+      gif_proctype: GIF_Parcellation_v3
+
+yamlprocessors:
+  - name: gif_v3
+    filepath: /home/dax/Xnat-management/ucl_processing/yaml_processors/processor_gif_parcellation.yaml
+  - name: gif_v3_dian
+    filepath: /home/dax/Xnat-management/ucl_processing/yaml_processors/processor_gif_parcellation_dian.yaml
+  - name: dwi2dti
+    filepath: /home/dax/Xnat-management/ucl_processing/yaml_processors/Processor_dwi_to_dti.yaml
+
+projects:
+  - project: ADNI_N
+    yamlprocessors: gif_v3
+  - project: DIAN
+    modules: dcm2nii
+    processors: spm,spm_ngaus2
+    yamlprocessors: gif_v3_dian
+  - project: prion
+    processors: bamos
+    yamlprocessors: gif_v3,dwi2dti
+  - project: control_HD
+    yamlprocessors: gif_v3
+  - project: control_PRION
+    yamlprocessors: gif_v3
+  - project: control_DRC
+    yamlprocessors: gif_v3

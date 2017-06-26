@@ -1,0 +1,48 @@
+---
+attrs:
+  priority_project:
+  queue_limit: 400
+  job_email: m.modat@ucl.ac.uk
+  job_email_options: a
+  xnat_host: https://prostate-xnat.cs.ucl.ac.uk
+modules:
+  - name: dcm2nii
+    filepath: /home/dax/Xnat-management/ucl_processing/ucl_modules/Module_dcm2nii_VERDICT.py
+    arguments:
+      directory: /cluster/project0/DAX/tmpdir/dcm2nii_verdict
+      zip_dicoms: True
+processors:
+  - name: reg_pro
+    filepath: /home/dax/Xnat-management/ucl_processing/ucl_processors/Processor_Registration_Prostate.py
+  - name: reg_ver
+    filepath: /home/dax/Xnat-management/ucl_processing/ucl_processors/Processor_Registration_Verdict.py
+  - name: verdict
+    filepath: /home/dax/Xnat-management/ucl_processing/ucl_processors/Processor_Verdict.py
+  - name: verdict_no_color
+    filepath: /home/dax/Xnat-management/ucl_processing/ucl_processors/Processor_Verdict.py
+    arguments:
+      version: 1.0.0
+      suffix: original
+  - name: verdict_pilot
+    filepath: /home/dax/Xnat-management/ucl_processing/ucl_processors/Processor_Verdict.py
+    arguments:
+      scheme_file: /home/dax/Code/matlab/VERDICT/Noptimised/NOptimisedV.scheme
+  - name: adc_verdict
+    filepath: /home/dax/Xnat-management/ucl_processing/ucl_processors/Processor_Compute_ADC_Verdict.py
+  - name: adc_hand
+    filepath: /home/dax/Xnat-management/ucl_processing/ucl_processors/Processor_ADC_MAP.py
+  - name: stretched_maps
+    filepath: /home/dax/Xnat-management/ucl_processing/ucl_processors/Processor_Stretched_Maps.py
+    arguments:
+      walltime: 40:00:00
+projects:
+  - project: INNOVATE
+    modules: dcm2nii
+    processors: reg_ver,verdict,verdict_no_color,adc_verdict
+  - project: PICTURE
+    processors: reg_pro
+  - project: HandN
+    processors: adc_hand,stretched_maps
+  - project: VERDICT
+    modules: dcm2nii
+    processors: reg_ver,verdict_pilot,adc_verdict

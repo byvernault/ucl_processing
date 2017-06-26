@@ -1,0 +1,10 @@
+python Spider_dwi_to_dti_v1_0_0.py \
+-d ~/data/jobsdir/test_dwi2dti/ \
+-a prion-x-016MTM30PC-x-016MTM30PC_20150728-x-dwi_to_dti_v1 \
+--exe perform_dti_processing.py \
+--host $XC \
+--dwi xnat:/project/prion/subject/016MTM30PC/experiment/016MTM30PC_20150728/scan/0005/resource/NIFTI,xnat:/project/prion/subject/016MTM30PC/experiment/016MTM30PC_20150728/scan/0003/resource/NIFTI \
+--bval xnat:/project/prion/subject/016MTM30PC/experiment/016MTM30PC_20150728/scan/0005/resource/BVAL,xnat:/project/prion/subject/016MTM30PC/experiment/016MTM30PC_20150728/scan/0003/resource/BVAL \
+--bvec xnat:/project/prion/subject/016MTM30PC/experiment/016MTM30PC_20150728/scan/0005/resource/BVEC,xnat:/project/prion/subject/016MTM30PC/experiment/016MTM30PC_20150728/scan/0003/resource/BVEC \
+--t1 xnat:/project/prion/subject/016MTM30PC/experiment/016MTM30PC_20150728/scan/0002/resource/NIFTI \
+--tiv xnat:/project/prion/subject/016MTM30PC/experiment/016MTM30PC_20150728/assessor/prion-x-016MTM30PC-x-016MTM30PC_20150728-x-0002-x-GIF_Parcellation_v3/resource/TIV \

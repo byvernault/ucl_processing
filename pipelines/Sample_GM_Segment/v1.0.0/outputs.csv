@@ -1,0 +1,5 @@
+m*.nii.gz,FILE,BIAS
+c*.nii.gz,FILE,C
+*.mat,FILE,MAT
+rc*.nii.gz,FILE,RC
+sample_gm_report.pdf,FILE,PDF

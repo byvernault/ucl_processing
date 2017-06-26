@@ -5,6 +5,7 @@ import os
 import glob
 import logging
 import nibabel as nib
+import shutil
 import subprocess as sb
 
 LOGGER = logging.getLogger('dax')
@@ -24,13 +25,13 @@ class Module_dcm2nii(ScanModule):
                  directory=DEFAULT_TPM_PATH, email=None,
                  text_report=DEFAULT_TEXT_REPORT,
                  zip_dicoms=False,
-                 dcm2niipath='dcm2nii',
-                 dcmdjpegpath='dcmdjpeg'):
+                 dcm2nii_exe='dcm2nii',
+                 dcmdjpeg_exe='dcmdjpeg'):
         """init function overridden from base-class."""
         super(Module_dcm2nii, self).__init__(mod_name, directory, email,
                                              text_report=text_report)
-        self.dcm2nii_exe = check_executable(dcm2niipath, 'dcm2nii')
-        self.dcmdjpeg_exe = check_executable(dcmdjpegpath, 'dcmdjpeg')
+        self.dcm2nii_exe = check_executable(dcm2nii_exe)
+        self.dcmdjpeg_exe = check_executable(dcmdjpeg_exe)
         self.dicom_paths = list()
         self.zip_dicoms = zip_dicoms
 
@@ -48,7 +49,7 @@ class Module_dcm2nii(ScanModule):
         # clean the directory created
         try:
             os.rmdir(self.directory)
-        except:
+        except Exception:
             LOGGER.warn('dcm2nii -- afterrun -- %s not empty. Could not \
 delete it.' % self.directory)
 
@@ -76,8 +77,7 @@ delete it.' % self.directory)
         else:
             LOGGER.debug('downloading all DICOMs...')
             self.dicom_paths = XnatUtils.download_files_from_obj(
-                                    self.directory,
-                                    scan_obj.resource('DICOM'))
+                self.directory, scan_obj.resource('DICOM'))
             if not self.dicom_paths:
                 msg = """dcm2nii -- %s -- No proper DICOM found in \
     resource DICOM on XNAT"""
@@ -164,7 +164,7 @@ dicom files, zipping dicoms.')
         initdir = os.getcwd()
         # Zip all the files in the directory
         os.chdir(dcm_dir)
-        os.system('zip -r '+fzip+' * > /dev/null')
+        os.system('zip -r {} * > /dev/null'.format(fzip))
         fzip_path = os.path.join(dcm_dir, fzip)
         # return to the initial directory:
         os.chdir(initdir)
@@ -205,9 +205,9 @@ dicom files, zipping dicoms.')
             dcm_p = os.path.join(dcm_dir, os.path.basename(root))
             new_dicom = "%s_dcmdjpeged.%s" % (dcm_p, ext)
             dcmdjpeg_cmd = DCMDJPEG_TEMPLATE.format(
-                                dcmdjpeg=self.dcmdjpeg_exe,
-                                original_dcm=dicom,
-                                new_dcm=new_dicom)
+                dcmdjpeg=self.dcmdjpeg_exe,
+                original_dcm=dicom,
+                new_dcm=new_dicom)
             os.system(dcmdjpeg_cmd)
             dicom_paths.append(new_dicom)
         return dicom_paths
@@ -229,8 +229,8 @@ dicom files, zipping dicoms.')
                 if fpath.lower().endswith('.nii.gz'):
                     nifti_list.append(fpath)
                 if fpath.lower().endswith('.nii'):
-                    os.system('gzip '+fpath)
-                    nifti_list.append(fpath+'.gz')
+                    os.system('gzip ' + fpath)
+                    nifti_list.append(fpath + '.gz')
 
         # Check NIFTI:
         good_to_upload = self.check_outputs(scan_info, nifti_list,
@@ -275,7 +275,7 @@ dicom files, zipping dicoms.')
         for nifti_fpath in nifti_list:
             try:
                 nib.load(nifti_fpath)
-            except:
+            except Exception:
                 LOGGER.warn("dcm2nii -- %s -- %s is not a proper NIFTI"
                             % (scan_info['scan_id'],
                                os.path.basename(nifti_fpath)))
@@ -292,34 +292,30 @@ no bval/bvec were generated', scan_info, error=True)
         return True
 
 
-def check_executable(executable, name):
+def no_executable(cmd):
+    try:
+        return shutil.which(cmd) is None
+    except AttributeError:  # Python < 3.3
+        return not any(
+            [os.path.isfile(os.path.join(path, cmd)) and
+             os.access(os.path.join(path, cmd), os.X_OK)
+             for path in os.environ["PATH"].split(os.pathsep)])
+
+
+def check_executable(executable):
     """Method to check the executable.
 
     :param executable: executable path
     :param name: name of Executable
     :return: Complete path to the executable
     """
-    if executable == name:
-        # Check the output of which:
-        pwhich = sb.Popen(['which', executable],
-                          stdout=sb.PIPE,
-                          stderr=sb.PIPE)
-        results, _ = pwhich.communicate()
-        if not results or results.startswith('/usr/bin/which: no'):
-            raise Exception("Executable '%s' not found on your computer."
-                            % (name))
-    else:
-        executable = os.path.abspath(executable)
-        if executable.endswith(name):
-            pass
-        elif os.path.isdir(executable):
-            executable = os.path.join(executable, name)
-        if not os.path.exists(executable):
-            raise Exception("Executable '%s' not found" % (executable))
+    if no_executable(executable):
+        raise Exception("Executable '%s' not found" % (executable))
 
     pversion = sb.Popen([executable, '--version'],
                         stdout=sb.PIPE,
                         stderr=sb.PIPE)
     nve_version, _ = pversion.communicate()
+    name = os.path.basename(executable)
     LOGGER.debug('%s version: %s' % (name, nve_version.strip().split('\n')[0]))
     return executable

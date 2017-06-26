@@ -294,6 +294,10 @@ class Spider_BaMoS(SessionSpider):
                               'BaMoS %s Results' % self.xnat_session,
                               image_labels=labels, cmap=cmap)
 
+        # Remove reorient images:
+        for image in glob.glob(os.path.join(result_dir, '*_reorient.nii.gz')):
+            os.remove(image)
+
     def finish(self):
         """Method to copy the results in dax.RESULTS_DIR."""
         result_dir = os.path.join(self.jobdir, self.xnat_session, 'Results')
@@ -311,6 +315,7 @@ class Spider_BaMoS(SessionSpider):
         if self.t2:
             reg.append(os.path.join(self.jobdir, self.xnat_session,
                                     'T2_%s.nii.gz' % self.xnat_session))
+
         results_dict = {
             'PDF': self.pdf_final,
             'LOBES': distance,

@@ -1,0 +1,27 @@
+---
+attrs:
+  priority_project:
+  queue_limit: 400
+  job_email: m.modat@ucl.ac.uk
+  job_email_options: a
+  xnat_host: http://cmic-xnat.cs.ucl.ac.uk
+modules:
+  - name: dcm2nii
+    filepath: /home/dax/Xnat-management/ucl_processing/ucl_modules/Module_dcm2nii.py
+    arguments:
+      directory: /cluster/project0/DAX/tmpdir/dcm2nii_cmic
+      zip_dicoms: True
+processors:
+  - name: spm
+    filepath: /home/dax/Xnat-management/ucl_processing/ucl_processors/Processor_Sample_GM_Segment.py
+    arguments:
+      scan_types: Sag_MPRAGE,Sag_MPRAGE_32 CH,MPRAGE M_FFE,MPRAGE repeat M_FFE,MPRAGE SENSE2 M_FFE,MPRAGE NORM,MPRAGE GRAPPA2 NORM,MPRAGE GRAPPA2 repeat NORM,MPRAGE GRAPPA3 NORM,SAG MPRAGE_GRAPPA2 NORM,Head_Head_MPRAGE GRAPPA2 NORM,Head_MPRAGE GRAPPA2 NORM,Head_MPRAGE GRAPPA2_S14_DIS2D NORM,Head_MPRAGE GRAPPA2_S17_DIS3D NORM
+yamlprocessors:
+  - name: gif_v3
+    filepath: /home/dax/Xnat-management/ucl_processing/yaml_processors/processor_gif_parcellation.yaml
+projects:
+  - project: Prisma_upgrade
+    yamlprocessors: gif_v3
+  - project: DIAN_SP
+    modules: dcm2nii
+    processors: spm

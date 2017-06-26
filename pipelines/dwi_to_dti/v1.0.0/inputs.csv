@@ -1,0 +1,9 @@
+dwi,FILE,DWI NIFTI files
+bval,FILE,BVAL files
+bvec,FILE,BVEC files
+t1,FILE,T1 NIFTI file
+tiv,FILE,T1 tiv file from gif
+exe,PATH,Path to python script perform_dti_processing.py
+omp,STRING,number of core used,f
+working_dir,PATH,working directory for temp files,f
+env_source,PATH,Environment file to source before the process,f

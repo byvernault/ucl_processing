@@ -1,0 +1,7 @@
+gad,FILE,GAD scan image file
+mprage,FILE,MPRAGE/T1 scan image file
+labels,FILE,LABELS file from gif parcellation
+brain,FILE,BRAIN file from gif parcellation
+exe,PATH,Path to exe perform_mprage2gad_registraiton.py
+omp,STRING,number of core use by reg_aladin,F
+working_dir,PATH,Working directory for temp files,F

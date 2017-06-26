@@ -1,10 +1,10 @@
 ---
 inputs:
   default:
-    spider_path: /Users/byvernault/home-local/code/git/ucl_processing/pipelines/Compute_ADC_Verdict/v1.0.0/Spider_Compute_ADC_Verdict_v1_0_0.py
-    matlab_src: /Users/byvernault/home-local/code/matlab/VERDICT/ADC_MAP/v1
-    camino: /Users/byvernault/home-local/softwares/caminoLaura
-    scheme_filename: /Users/byvernault/home-local/code/matlab/VERDICT/Noptimised/NOptimisedADC_IN.scheme
+    spider_path: /home/dax/Xnat-management/ucl_processing/pipelines/Compute_ADC_Verdict/v1.0.0/Spider_Compute_ADC_Verdict_v1_0_0.py
+    matlab_src: /home/dax/Code/matlab/VERDICT/ADC_MAP/v1
+    camino: /home/dax/Code/caminoLaura
+    scheme_filename: /home/dax/Code/matlab/VERDICT/Noptimised/NOptimisedADC_IN.scheme
   xnat:
     scans:
       - scan1:
@@ -24,7 +24,7 @@ inputs:
            required: False
 command: python {spider_path} --dcm_file {dcm} --acquisitions {acquisition1},{acquisition2}
 attrs:
-  # suffix:
+  suffix:
   xsitype: proc:genProcData
   walltime: 01:00:00
   memory: 3850

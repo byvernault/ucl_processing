@@ -1,7 +1,7 @@
 ---
 inputs:
   default:
-    spider_path: /Users/byvernault/home-local/code/git/ucl_processing/pipelines/Vessels2Gad_Reg/v1.0.0/Spider_Vessels2Gad_Reg_v1_0_0.py
+    spider_path: /home/dax/Xnat-management/ucl_processing/pipelines/Vessels2Gad_Reg/v1.0.0/Spider_Vessels2Gad_Reg_v1_0_0.py
     working_dir: /scratch0/dax/
     nipype_exe: perform_vessels2gad_registration.py
     omp: 4
@@ -19,7 +19,7 @@ inputs:
             varname: vessel
 command: python {spider_path} --exe {nipype_exe} --gad {gad} --vessel {vessel}
 attrs:
-  # suffix:
+  suffix:
   xsitype: proc:genProcData
   walltime: 01:00:00
   memory: 4048

@@ -1,0 +1,37 @@
+---
+inputs:
+  default:
+    spider_path: /home/dax/Xnat-management/ucl_processing/pipelines/Mprage2Gad_Reg/v1.0.0/Spider_Mprage2Gad_Reg_v1_0_0.py
+    working_dir: /scratch0/dax/
+    nipype_exe: perform_mprage2gad_registration.py
+    omp: 4
+  xnat:
+    scans:
+      - scan1:
+        types: 1mm Ax FSPG + Gad
+        resources:
+          - resource: NIFTI
+            varname: gad
+      - scan2:
+        types:  1mm Cor MPRAGE
+        resources:
+          - resource: NIFTI
+            varname: mprage
+    assessors:
+     - assessor1:
+       proctypes: GIF_Parcellation_v3
+       needs_qc: False
+       resources:
+         - resource: BRAIN
+           varname: brain
+         - resource: LABELS
+           varname: labels
+command: python {spider_path} --exe {nipype_exe} --gad {gad} --mprage {mprage} --labels {labels} --brain {brain}
+attrs:
+  suffix:
+  xsitype: proc:genProcData
+  walltime: 01:00:00
+  memory: 3850
+  ppn: 4
+  type: scan
+  scan_nb: scan2

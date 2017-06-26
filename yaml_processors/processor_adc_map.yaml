@@ -1,8 +1,8 @@
 ---
 inputs:
   default:
-    spider_path: /Users/byvernault/home-local/code/git/ucl_processing/pipelines/ADC_MAP/v1.0.0/Spider_ADC_MAP_v1_0_0.py
-    matlab_code: /Users/byvernault/home-local/code/matlab/ADC_HAND/v1
+    spider_path: /home/dax/Xnat-management/ucl_processing/pipelines/ADC_MAP/v1.0.0/Spider_ADC_MAP_v1_0_0.py
+    matlab_code: /home/dax/Code/matlab/ADC_HAND/v1
   xnat:
     scans:
       - scan1:

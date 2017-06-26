@@ -25,7 +25,6 @@ __modifications__ = """2016-03-15 14:56 - Adding working_dir options
 2016-05-10 18:04:01 - Update to new format respecting pep8
 """
 
-
 GIF_CMD = """{exe_path} \
 -i {input} \
 -o {output} \
@@ -136,19 +135,16 @@ class Spider_GIF_Parcellation(ScanSpider):
         else:
             exe_path = os.path.join(gif_script, "perform_gif_propagation.py")
 
-        if not os.path.exists(exe_path):
-            raise Exception("Python script: %s not found" % (exe_path))
-        else:
-            if not os.path.exists(os.path.join(self.jobdir, 'outputs')):
-                os.makedirs(os.path.join(self.jobdir, 'outputs'))
-            cmd = GIF_CMD.format(exe_path=exe_path,
-                                 input=self.inputs[0],
-                                 output=os.path.join(self.jobdir, 'outputs'),
-                                 db_xml=dbtemplate,
-                                 number_core=self.number_core,
-                                 working_dir=working_dir)
-            self.run_system_cmd(cmd)
-            self.make_pdf()
+        if not os.path.exists(os.path.join(self.jobdir, 'outputs')):
+            os.makedirs(os.path.join(self.jobdir, 'outputs'))
+        cmd = GIF_CMD.format(exe_path=exe_path,
+                             input=self.inputs[0],
+                             output=os.path.join(self.jobdir, 'outputs'),
+                             db_xml=dbtemplate,
+                             number_core=self.number_core,
+                             working_dir=working_dir)
+        self.run_system_cmd(cmd)
+        self.make_pdf()
 
     def finish(self):
         """Method to copy the results in dax.RESULTS_DIR."""

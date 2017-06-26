@@ -1,0 +1,44 @@
+---
+inputs:
+  # Default inputs for the spider
+  default:
+    spider_path: /home/dax/Xnat-management/ucl_processing/pipelines/dwi_to_dti/v1.0.0/Spider_dwi_to_dti_v1_0_0.py
+    working_dir: /scratch0/dax/
+    nipype_exe: perform_dti_processing.py
+    env_source: /share/apps/cmic/NiftyPipe/v2.0/setup_v2.0.sh
+    omp: 4
+  # All inputs related to XNAT on a session (scans or assessors)
+  xnat:
+    # all scans needed
+    scans:
+      - scan1:
+        types: DWI,B0
+        nargs: +
+        resources:
+          - resource: NIFTI
+            varname: dwi
+          - resource: BVAL
+            varname: bval
+          - resource: BVEC
+            varname: bvec
+      - scan2:
+        types: MPRAGE
+        resources:
+          - resource: NIFTI
+            varname: t1
+    # all assessors needed
+    assessors:
+     - assessor1:
+       proctypes: GIF_Parcellation_v3
+       needs_qc: False
+       resources:
+         - resource: TIV
+           varname: tiv
+command: python {spider_path} --exe {nipype_exe} --dwi {dwi} --bval {bval} --bvec {bvec} --t1 {t1} --tiv {tiv}
+attrs:
+  suffix:
+  xsitype: proc:genProcData
+  walltime: 06:00:00
+  memory: 6850
+  ppn: 4
+  type: session

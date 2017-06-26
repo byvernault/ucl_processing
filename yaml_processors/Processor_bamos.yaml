@@ -1,0 +1,43 @@
+---
+inputs:
+  default:
+    spider_path: /home/dax/Xnat-management/ucl_processing/pipelines/BaMoS/v1.0.0/Spider_BaMoS_v1_0_0.py
+    working_dir: /scratch0/dax/
+    nipype_exe: perform_bamos_full.py
+    env_source: /share/apps/cmic/NiftyPipe/v2.0/setup_v2.0.sh
+    gmatrix: /cluster/project0/SegBiASM/DataToTryBaMoS/GMatrix4_Low3.txt
+    rule: /cluster/project0/SegBiASM/DataToTryBaMoS/GenericRule_CSF.txt
+    icbm: /cluster/project0/SegBiASM/ICBM_Priors
+    omp: 4
+  xnat:
+    scans:
+      - scan1:
+        types: MPRAGE,T1
+        resources:
+          - resource: NIFTI
+            varname: t1
+      - scan2:
+        types: FLAIR
+        resources:
+          - resource: NIFTI
+            varname: flair
+    assessors:
+     - assessor1:
+       proctypes: GIF_Parcellation_v3
+       resources:
+         - resource: TIV
+           varname: tiv
+         - resource: PRIOR
+           varname: prior
+         - resource: SEG
+           varname: seg
+         - resource: LABELS
+           varname: labels
+command: python {spider_path} --t1 {t1} --flair {flair} --gif_seg {seg} --gif_parc {labels} --gif_prior {prior} --gif_tiv {tiv}
+attrs:
+  suffix:
+  xsitype: proc:genProcData
+  walltime: 24:00:00
+  memory: 8048
+  ppn: 4
+  type: session

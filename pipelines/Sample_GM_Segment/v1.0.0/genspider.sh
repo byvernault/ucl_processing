@@ -1,0 +1,1 @@
+dax_generator autospider -n Sample_GM_Segment -v 1.0.0 -i inputs.csv -o outputs.csv -c call.m -d .

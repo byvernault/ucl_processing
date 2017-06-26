@@ -11,8 +11,8 @@ inputs = [
     ("t1_file", "FILE", "MPRAGE/T1 File to process with GIF"),
     ("dbt", "PATH", "gif-based database xml file"),
     ("gif", "PATH", "Path to Gif python script perform_gif_propagation.py"),
-    ("openmp_core", "STRING", "number of core use by reg_aladin"),
-    ("working_dir", "PATH", "working directory for temp files")]
+    ("openmp_core", "STRING", "number of core use by reg_aladin", "F"),
+    ("working_dir", "PATH", "working directory for temp files", "F")]
 
 outputs = [
     ("GIF_parcellation.pdf", "FILE", "PDF"),
@@ -35,35 +35,44 @@ from collections import OrderedDict
 JOB_DIR = '${temp_dir}'
 IN_FILE = '${t1_file}'
 DB_TEMPLATE = '${dbt}'
-GIF_EXE = '${gif}'
+NIFTYPIPE_EXE = '${gif}'
 OPENMP_CORE = '${openmp_core}'
 WORKING_DIR = '${working_dir}'
-EXE_CMD = '''{exe_path} \
+EXE_CMD = '''{exe} \
 -i {input} \
 -o {output} \
 -d {db_xml} \
 --no_qsub \
---openmp_core {number_core} \
 --n_procs 1 \
---working_dir '{working_dir}' \
---remove_tmp'''
+--remove_tmp \
+{omp} \
+{wdir}'''
+OMP = '''--openmp_core {number_core}'''
+WDIR = '''--working_dir '{working_dir}' '''
 
 
 def main():
-    if len(WORKING_DIR) > 0 and not os.path.exists(WORKING_DIR):
-        os.makedirs(WORKING_DIR)
+    _working_dir = None
+    if WORKING_DIR != 'None':
+        _working_dir = os.path.join(WORKING_DIR, '${assessor_label}')
+        if not os.path.exists(_working_dir):
+            os.makedirs(_working_dir)
 
-    if os.path.exists(GIF_EXE) or XnatUtils.executable_exists(GIF_EXE):
-        cmd = EXE_CMD.format(exe_path=GIF_EXE,
+    if os.path.exists(NIFTYPIPE_EXE) or \
+       XnatUtils.executable_exists(NIFTYPIPE_EXE):
+        if OPENMP_CORE is not None and OPENMP_CORE != 'None':
+            _omp = OMP.format(number_core=OPENMP_CORE)
+        if _working_dir is not None:
+            _wd = WDIR.format(working_dir=_working_dir)
+        cmd = EXE_CMD.format(exe=NIFTYPIPE_EXE,
                              input=IN_FILE,
                              output=JOB_DIR,
                              db_xml=DB_TEMPLATE,
-                             number_core=OPENMP_CORE,
-                             working_dir=WORKING_DIR)
+                             omp=_omp, wdir=_wd)
         os.system(cmd)
         make_pdf()
     else:
-        raise Exception("Error: %s not found" % (GIF_EXE))
+        raise Exception("Error: %s not found" % (NIFTYPIPE_EXE))
 
 
 def make_pdf():
@@ -137,7 +146,7 @@ or more than one file found.'
 
     # Join the two pages for the PDF:
     pdf_final = os.path.join(JOB_DIR, 'GIF_parcellation.pdf')
-    spiders.merge_pdf(pdf_pages, pdf_final)
+    spiders.merge_pdfs(pdf_pages, pdf_final)
 
 
 if __name__ == '__main__':

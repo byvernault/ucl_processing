@@ -50,14 +50,17 @@ OMP = '''--openmp_core {number_core}'''
 
 def main():
     ''' Main function.'''
-    if WORKING_DIR != 'None' and not os.path.exists(WORKING_DIR):
-        os.makedirs(WORKING_DIR)
+    _working_dir = None
+    if WORKING_DIR != 'None':
+        _working_dir = os.path.join(WORKING_DIR, '${assessor_label}')
+        if not os.path.exists(_working_dir):
+            os.makedirs(_working_dir)
 
     if XnatUtils.executable_exists(NIFTYPIPE_EXE):
         _omp = '' if OPENMP_CORE == 'None' \
                else OMP.format(number_core=OPENMP_CORE)
-        _wd = '' if WORKING_DIR == 'None' \
-              else '--working_dir {0}'.format(WORKING_DIR)
+        _wd = '' if _working_dir is not None \
+              else '--working_dir {0}'.format(_working_dir)
         _min = '' if MIN == 'None' else '--min {0}'.format(MIN)
         _max = '' if MAX == 'None' else '--max {0}'.format(MAX)
 
