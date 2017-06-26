@@ -1,6 +1,0 @@
----
-host: http://cmic-xnat.cs.ucl.ac.uk
-projects:
-  - project: ADNI_N
-    processors:
-      - processor: gif.yaml
