@@ -15,6 +15,7 @@ DEFAULT_MODULE_NAME = 'dcm2nii'
 DEFAULT_TEXT_REPORT = 'ERROR/WARNING for dcm2nii :\n'
 DCM2NII_CMD = '''{dcm2nii} -a n -e n -d n -g y -f n -n y -p n \
 -v y -x n -r n {dicom}'''
+AVOID_SCANTYPES = ['PhoenixZIPReport']
 DCMDJPEG_TEMPLATE = """{dcmdjpeg} {original_dcm} {new_dcm} > /dev/null"""
 
 
@@ -72,12 +73,19 @@ delete it.' % self.directory)
 
     def run(self, scan_info, scan_obj):
         """run function to convert dicom to parrec to nifti and upload data."""
+        # clean tmp folder
+        XnatUtils.clean_directory(self.directory)
+
         if not len(scan_obj.resource('DICOM').files().get()) > 0:
             LOGGER.debug('no DICOM files')
+        elif scan_info['type'] in AVOID_SCANTYPES:
+            LOGGER.info('avoid this scan type: {}'.format(scan_info['type']))
         else:
             LOGGER.debug('downloading all DICOMs...')
+
             self.dicom_paths = XnatUtils.download_files_from_obj(
                 self.directory, scan_obj.resource('DICOM'))
+
             if not self.dicom_paths:
                 msg = """dcm2nii -- %s -- No proper DICOM found in \
     resource DICOM on XNAT"""
@@ -87,6 +95,7 @@ delete it.' % self.directory)
             else:
                 # convert dcm to nii
                 dcm_dir = os.path.dirname(self.dicom_paths[0])
+
                 # ZIP the DICOM if more than one
                 if len(self.dicom_paths) > 1 and self.zip_dicoms:
                     self.zipping_dicoms(scan_obj, dcm_dir)
@@ -108,19 +117,23 @@ delete it.' % self.directory)
                     dcm_dir = os.path.dirname(dicom_paths_djpeg[0])
 
                 # Check if Nifti created:
-                nifti_list = [f for f in os.listdir(dcm_dir)
-                              if f.endswith('.nii.gz') or f.endswith('.nii')]
+                nifti_list = [
+                    f for f in os.listdir(dcm_dir)
+                    if f.endswith('.nii.gz') or f.endswith('.nii')]
                 if not nifti_list:
-                    LOGGER.warn("dcm2nii -- %s -- DCM --> NII ( preprocess \
-dicom with dcmdjpeg ) conversion failure" % scan_info['scan_id'])
-                    self.log_warning_error('Fail to convert DICOM to NIFTI ',
-                                           scan_info)
+                    msg = "dcm2nii -- %s -- DCM --> NII ( preprocess \
+dicom with dcmdjpeg ) conversion failure"
+                    LOGGER.warn(msg % scan_info['scan_id'])
+                    msg = 'Fail to convert DICOM to NIFTI '
+                    self.log_warning_error(msg, scan_info)
                 else:
                     # UPLOADING THE RESULTS
-                    self.upload_converted_images(dcm_dir, scan_obj, scan_info)
+                    self.upload_converted_images(
+                        dcm_dir, scan_obj, scan_info)
 
             # clean tmp folder
-            self.clean_directory()
+            LOGGER.debug('clean temp directory...')
+            XnatUtils.clean_directory(self.directory)
 
     @staticmethod
     def is_dicom(fpath):

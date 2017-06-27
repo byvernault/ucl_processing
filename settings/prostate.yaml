@@ -22,7 +22,7 @@ processors:
     filepath: /home/dax/Xnat-management/ucl_processing/ucl_processors/Processor_Verdict.py
     arguments:
       version: 1.0.0
-      suffix: original
+      suffix_proc: original
   - name: verdict_pilot
     filepath: /home/dax/Xnat-management/ucl_processing/ucl_processors/Processor_Verdict.py
     arguments:
